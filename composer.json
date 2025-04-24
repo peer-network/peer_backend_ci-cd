@@ -1,7 +1,7 @@
 {
     "name": "peer/peer_backend_ci-cd",
     "description": "CI/CD Tests for the Backend repo",
-    "license": "AGPLv3",
+    "license": "AGPL-3.0-or-later",
         
     "autoload": {
         "psr-4": {
