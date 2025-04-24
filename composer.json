@@ -1,4 +1,8 @@
 {
+    "name": "peer/peer_backend_ci-cd",
+    "description": "CI/CD Tests for the Backend repo",
+    "license": "AGPLv3",
+        
     "autoload": {
         "psr-4": {
             "Fawaz\\": "src/"
