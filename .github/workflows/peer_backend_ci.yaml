@@ -1,0 +1,91 @@
+name: Peer Backend CI
+
+on:
+  pull_request
+
+jobs:
+  syntax:
+    name: PHP Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Run PHP Syntax Check
+        run: |
+          find src -name "*.php" -exec php -l {} \;
+
+  setup:
+    name: Set Up Composer Dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.1', '8.2', '8.3']
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set Up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: pdo
+          coverage: none
+
+      - name: Restore Composer Cache
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer Dependencies
+        run: |
+          composer install --prefer-dist --no-progress --no-suggest --no-interaction
+
+      - name: Validate Composer Files
+        run: composer validate --strict
+
+  psalm:
+    name: Psalm Static Analysis
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.1', '8.2', '8.3']
+    needs: [setup]
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set Up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extentions: pdo
+
+      - name: Run Psalm
+        run:  ./vendor/bin/psalm src
+
+  codesniffer:
+    name: PHP Codesniffer
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.1', '8.2', '8.3']
+    needs: [setup]
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set Up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: pdo
+
+      - name: Run Codesniffer
+        run: phpcs --standard=PSR12 src
+
+        
