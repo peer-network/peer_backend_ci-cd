@@ -7,9 +7,17 @@ jobs:
   syntax:
     name: PHP Syntax Check
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.1', '8.2', '8.3']
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+
+      - name: Set Up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
 
       - name: Run PHP Syntax Check
         run: |
@@ -37,13 +45,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vendor
-          key: ${{ runner.os }}-composer-${{ hashFiles('composer.json') }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-composer-
 
       - name: Install Composer Dependencies
         run: |
-          composer install --prefer-dist --no-progress --no-suggest --no-interaction
+          composer install --prefer-dist --no-progress --no-interaction
 
       - name: Validate Composer Files
         run: composer validate --strict
@@ -63,10 +71,15 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          extentions: pdo
+          extensions: pdo
 
-      - name: Run Psalm
-        run:  ./vendor/bin/psalm src
+      - name: Download Psalm Phar
+        run: |
+          curl -L https://github.com/vimeo/psalm/releases/latest/download/psalm.phar -o psalm.phar
+          chmod +x psalm.phar
+          sudo mv psalm.phar /usr/local/bin/psalm
+      - name: Run Psalm on src/
+        run:  psalm --no-progress src
 
   codesniffer:
     name: PHP Codesniffer
@@ -85,7 +98,11 @@ jobs:
           php-version: ${{ matrix.php-version }}
           extensions: pdo
 
-      - name: Run Codesniffer
-        run: phpcs --standard=PSR12 src
+      - name: Install PHP_Codesniffer (phpcs)
+        run: |
+          curl -L https://squizlabs.github.io/PHP_CodeSniffer/phpcs.phar -o phpcs
+          chmod +x phpcs
+          sudo mv phpcs /usr/local/bin/phpcs
 
-        
+      - name: Run phpcs on src/
+        run: phpcs --standard=PSR12 src
