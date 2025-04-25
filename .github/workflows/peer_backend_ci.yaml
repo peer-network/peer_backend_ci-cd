@@ -79,7 +79,7 @@ jobs:
           chmod +x psalm.phar
           sudo mv psalm.phar /usr/local/bin/psalm
       - name: Run Psalm on src/
-        run:  psalm --no-progress src
+        run:  psalm --no-progress --root=. src
 
   codesniffer:
     name: PHP Codesniffer
