@@ -241,7 +241,7 @@ jobs:
           jq '.values += [{"key": "BACKEND_URL", "value": "http://backend", "type": "default", "enabled": true}]' \
             tests/postman_collection/graphql_postman_environment.json > temp_env.json
           mv temp_env.json tests/postman_collection/graphql_postman_environment.json
- 
+
       - name: Run Postman Tests in Newman Container
         id: newman
         run: |
