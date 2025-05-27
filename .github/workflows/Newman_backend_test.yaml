@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - '**'
-      
+
 permissions:
   contents: write
  
@@ -425,7 +425,6 @@ jobs:
           else
             echo "gh-pages branch already exists"
           fi
-
       - name: Checkout gh-pages branch
         run: |
           git fetch origin gh-pages
@@ -472,16 +471,18 @@ jobs:
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           DISCORD_MENTION: ${{ needs.map_pr_to_discord.outputs.discord_mention }}
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          IS_NEWMAN_FAILURE: ${{ needs.aggregate_results.outputs.newman_failed_any }}
         run: |
-          if [ "$IS_NEWMAN_FAILURE" = "true" ]; then
+          PHP82_URL="${{ steps.urls.outputs.php82_url }}"
+          PHP83_URL="${{ steps.urls.outputs.php83_url }}"
+
+          if [ "${{ needs.aggregate_results.outputs.newman_failed_any }}" = "true" ]; then
             MESSAGE=":x: **Newman Tests Failed!**\n"
             MESSAGE+="**PR:** $PR_TITLE\n"
             MESSAGE+="**Author:** <https://github.com/$PR_AUTHOR>\n"
             MESSAGE+="[PR Link]($PR_URL)\n"
             MESSAGE+="[CI Run]($RUN_URL)\n"
-            MESSAGE+="[PHP 8.2 Report](${{ steps.urls.outputs.php82_url }})\n"
-            MESSAGE+="[PHP 8.3 Report](${{ steps.urls.outputs.php83_url }})\n"
+            MESSAGE+="[PHP 8.2 Report]($PHP82_URL)\n"
+            MESSAGE+="[PHP 8.3 Report]($PHP83_URL)\n"
             MESSAGE+="$DISCORD_MENTION"
           else
             MESSAGE=":x: **CI Failed (non-Newman error)**\n"
