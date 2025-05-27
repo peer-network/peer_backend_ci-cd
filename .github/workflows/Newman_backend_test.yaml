@@ -392,6 +392,7 @@ jobs:
               echo "discord_mention=<@1362087975906967736>" >> $GITHUB_OUTPUT
               ;;
           esac
+          
   publish_report_to_pages:
     name: Publish Htmlextra Report to Pages 
     runs-on: ubuntu-latest
@@ -421,7 +422,7 @@ jobs:
           else
             echo "gh-pages branch already exists"
           fi
-          
+
       - name: Checkout gh-pages branch
         run: |
           git fetch origin gh-pages
