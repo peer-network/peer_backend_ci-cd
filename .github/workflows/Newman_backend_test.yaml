@@ -411,6 +411,8 @@ jobs:
           if ! git ls-remote --exit-code --heads origin gh-pages; then
             echo "Creating gh-pages branch"
             git checkout --orphan gh-pages
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
             git rm -rf .
             touch .keep
             git add .keep
@@ -419,7 +421,7 @@ jobs:
           else
             echo "gh-pages branch already exists"
           fi
-
+          
       - name: Checkout gh-pages branch
         run: |
           git fetch origin gh-pages
