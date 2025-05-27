@@ -396,7 +396,7 @@ jobs:
     name: Publish Htmlextra Report to Pages 
     runs-on: ubuntu-latest
     needs: [build_and_test, aggregate_results, map_pr_to_discord]
-    if: ${{ needs.aggregate_results.outputs.newman_failed_any && needs.aggregate_results.outputs.newman_failed_any == 'true' }}
+    if: always()
     steps:
       - name: Show newman_failed_any output
         run: echo "Evaluating newman_failed_any => ${{ needs.aggregate_results.outputs.newman_failed_any }}"
