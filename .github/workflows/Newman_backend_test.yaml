@@ -345,6 +345,7 @@ jobs:
             echo "outcome=other_failure" >> $GITHUB_OUTPUT
           else
             echo "outcome=success" >> $GITHUB_OUTPUT
+          fi
         shell: bash
 
   aggregate_results:
