@@ -333,6 +333,7 @@ jobs:
   aggregate_results:
     name: Aggregate Newman Results
     runs-on: ubuntu-latest
+    if: always()
     needs: build_and_test
     outputs:
       newman_failed_any: ${{ steps.setflag.outputs.newman_failed_any }}
