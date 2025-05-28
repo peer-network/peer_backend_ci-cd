@@ -362,7 +362,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-        path: outcomes
+          path: outcomes
 
       - id: aggregate
         run: |
