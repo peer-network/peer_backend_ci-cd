@@ -359,6 +359,7 @@ jobs:
     name: Aggregate Matrix Job Outcomes
     runs-on: ubuntu-latest
     needs: [build_and_test]
+    if: always()
     outputs:
       final_outcome: ${{ steps.aggregate.outputs.final_outcome }}
     steps:
