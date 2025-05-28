@@ -548,11 +548,13 @@ jobs:
     name: Send Discord Notification for Non-Newman Failures
     runs-on: ubuntu-latest
     needs: [aggregate_outcome]
-    if: needs.aggregate_outcome.outputs.final_outcome == 'other_failure'
+    if: always()
     steps:
-      - run: echo "Outcome was ${{ needs.aggregate_outcome.outputs.final_outcome }}"
+      - name: Log aggregated outcome
+        run: echo "Outcome was ${{ needs.aggregate_outcome.outputs.final_outcome }}"
 
-      - name: Send Discord Notification
+      - name: Send Discord Notification (if other_failure)
+        if: needs.aggregate_outcome.outputs.final_outcome == 'other_failure'
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           PR_TITLE: ${{ github.event.pull_request.title }}
@@ -574,8 +576,8 @@ jobs:
     name: Fail workflow if needed
     runs-on: ubuntu-latest
     needs: [aggregate_outcome]
-    if: needs.aggregate_outcome.outputs.final_outcome != 'success'
+    if:  needs.aggregate_outcome.outputs.final_outcome != 'success'
     steps:
       - run: |
-          echo " Failing workflow to block merge (reason: ${{ needs.aggregate_outcome.outputs.final_outcome }})"
+          echo "Failing workflow to block merge (reason: ${{ needs.aggregate_outcome.outputs.final_outcome }})"
           exit 1
