@@ -336,12 +336,19 @@ jobs:
         id: outcome
         if: always()
         run: |
-          if [ "${{ steps.newman_output.outputs.outcome }}" != "0" ]; then
-            echo "outcome=newman_failed" >> $GITHUB_OUTPUT
-          elif [ "${{ job.status }}" != "success" ]; then
+          newman_exit_code="${{ steps.newman_output.outputs.outcome }}"
+          job_status="${{ job.status }}"
+
+          if [ "$newman_exit_code" = "0" ]; then
+            if [ "$job_status" != "success" ]; then
+              echo "outcome=other_failure" >> $GITHUB_OUTPUT
+            else
+              echo "outcome=success" >> $GITHUB_OUTPUT
+            fi
+          elif [ -z "$newman_exit_code" ]; then
             echo "outcome=other_failure" >> $GITHUB_OUTPUT
           else
-            echo "outcome=success" >> $GITHUB_OUTPUT
+            echo "outcome=newman_failed" >> $GITHUB_OUTPUT
           fi
 
       - name: Save outcome to file
