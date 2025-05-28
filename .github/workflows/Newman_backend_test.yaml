@@ -548,7 +548,7 @@ jobs:
     name: Send Discord Notification for Non-Newman Failures
     runs-on: ubuntu-latest
     needs: [aggregate_outcome]
-    if: always()
+    if: needs.aggregate_outcome.outputs.final_outcome == 'other_failure'
     steps:
       - run: echo "Outcome was ${{ needs.aggregate_outcome.outputs.final_outcome }}"
 
