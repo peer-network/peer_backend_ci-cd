@@ -247,14 +247,6 @@ jobs:
             tests/postman_collection/graphql_postman_environment.json > temp_env.json
           mv temp_env.json tests/postman_collection/graphql_postman_environment.json
 
-      - name: Conditionally strip response code checks
-        if: contains(github.head_ref, 'change-response-code')
-        run: |
-          echo " Detected 'change-response-code' in branch name — stripping brittle Postman test assertions..."
-          sed -i '/pm\.expect(pm\.response\.text()).*include.*[0-9][0-9][0-9][0-9]/d' tests/postman_collection/graphql_postman_collection.json
-          sed -i '/pm\.expect(pm\.response\.text()).*status.*success/d' tests/postman_collection/graphql_postman_collection.json
-          sed -i '/pm\.expect(pm\.response\.text()).*status.*error/d' tests/postman_collection/graphql_postman_collection.json
-
       - name: Run Postman Tests in Newman Container
         id: newman
         continue-on-error: true
@@ -558,7 +550,7 @@ jobs:
   send_other_failure_discord_notification:
     name: Send Discord Notification for Non-Newman Failures
     runs-on: ubuntu-latest
-    needs: [aggregate_outcome]
+    needs: [aggregate_outcome, map_pr_to_discord]
     if: always()
     steps:
       - name: Log aggregated outcome
@@ -571,12 +563,47 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PR_MENTION: ${{ needs.map_pr_to_discord.outputs.discord_mention }}
         run: |
           MESSAGE=":x: **CI Failed (non-Newman error)**\n"
           MESSAGE+="**PR:** $PR_TITLE\n"
           MESSAGE+="[PR Link]($PR_URL)\n"
           MESSAGE+="[CI Run]($RUN_URL)\n"
-          MESSAGE+="<@1362087975906967736>"
+          MESSAGE+="<@1362087975906967736> $PR_MENTION"
+
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"${MESSAGE}\"}" \
+               "$DISCORD_WEBHOOK_URL"
+  send_success_discord_notification:
+    name: Send Discord Notification for Successful CI
+    runs-on: ubuntu-latest
+    needs: [aggregate_outcome, publish_report_to_pages]
+    if: needs.aggregate_outcome.outputs.final_outcome == 'success'
+    steps:
+      - name: Construct HTMLExtra report URLs
+        id: urls
+        run: |
+          BASE_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+          echo "php82_url=${BASE_URL}/reports/${{ github.run_id }}/php-8.2/report.html" >> $GITHUB_OUTPUT
+          echo "php83_url=${BASE_URL}/reports/${{ github.run_id }}/php-8.3/report.html" >> $GITHUB_OUTPUT
+
+      - name: Send Discord Notification to Team Lead
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          PHP82_URL="${{ steps.urls.outputs.php82_url }}"
+          PHP83_URL="${{ steps.urls.outputs.php83_url }}"
+          MESSAGE=":white_check_mark: **CI Passed Successfully**\n"
+          MESSAGE+="**PR:** $PR_TITLE\n"
+          MESSAGE+="[PR Link]($PR_URL)\n"
+          MESSAGE+="[CI Run]($RUN_URL)\n"
+          MESSAGE+="[PHP 8.2 Report]($PHP82_URL)\n"
+          MESSAGE+="[PHP 8.3 Report]($PHP83_URL)\n"
+          MESSAGE+="<@1355093873323671742>"  # vidkazan
 
           curl -H "Content-Type: application/json" \
                -X POST \
