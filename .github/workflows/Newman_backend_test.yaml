@@ -249,9 +249,11 @@ jobs:
 
       - name: Run Postman Tests in Newman Container
         id: newman
-        run: |
-          docker compose -f ./docker-compose.yaml run --rm newman
         continue-on-error: true
+        run: |
+          result=0
+          docker compose -f ./docker-compose.yaml run --rm newman || result=$?
+          echo "outcome=$result" >> $GITHUB_OUTPUT
 
       - name: Save Newman Failure Result
         run: |
@@ -329,14 +331,13 @@ jobs:
         id: outcome
         if: always()
         run: |
-          if [ "${{ steps.newman.outcome }}" != "success" ]; then
+          if [ "${{ steps.newman.outputs.outcome }}" != "0" ]; then
             echo "outcome=newman_failed" >> $GITHUB_OUTPUT
           elif [ "${{ job.status }}" != "success" ]; then
             echo "outcome=other_failure" >> $GITHUB_OUTPUT
           else
             echo "outcome=success" >> $GITHUB_OUTPUT
           fi
-        shell: bash
 
   aggregate_results:
     name: Aggregate Newman Results
