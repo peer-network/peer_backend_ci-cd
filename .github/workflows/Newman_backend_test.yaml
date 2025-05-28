@@ -450,6 +450,9 @@ jobs:
             artemyavruyan)
               echo "discord_mention=<@1354855455179935896>" >> $GITHUB_OUTPUT
               ;;
+            Ali2710)
+              echo "discord_mention=<@1354034371555758100>" >> $GITHUB_OUTPUT
+              ;;
             WisdomNwaiwu)
               echo "discord_mention=<@1362087975906967736>" >> $GITHUB_OUTPUT
               ;;
