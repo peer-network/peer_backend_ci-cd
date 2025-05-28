@@ -253,7 +253,12 @@ jobs:
         run: |
           result=0
           docker compose -f ./docker-compose.yaml run --rm newman || result=$?
-          echo "outcome=$result" >> $GITHUB_OUTPUT
+          echo "$result" > newman_exit_code.txt
+
+      - name: Set newman outcome output
+        id: newman_output
+        run: |
+          echo "outcome=$(cat newman_exit_code.txt)" >> $GITHUB_OUTPUT
 
       - name: Save Newman Failure Result
         run: |
@@ -331,14 +336,14 @@ jobs:
         id: outcome
         if: always()
         run: |
-          if [ "${{ steps.newman.outputs.outcome }}" != "0" ]; then
+          if [ "${{ steps.newman_output.outputs.outcome }}" != "0" ]; then
             echo "outcome=newman_failed" >> $GITHUB_OUTPUT
           elif [ "${{ job.status }}" != "success" ]; then
             echo "outcome=other_failure" >> $GITHUB_OUTPUT
           else
             echo "outcome=success" >> $GITHUB_OUTPUT
           fi
-
+          
   aggregate_results:
     name: Aggregate Newman Results
     runs-on: ubuntu-latest
