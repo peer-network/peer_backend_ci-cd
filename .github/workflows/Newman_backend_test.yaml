@@ -226,7 +226,7 @@ jobs:
           docker run --rm \
             --network my-network \
             curlimages/curl:$TAG \
-            curl -sf http://backendgraphql
+            curl -sf http://backend/graphql
  
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
@@ -588,12 +588,12 @@ jobs:
           PHP83_URL="${{ steps.urls.outputs.php83_url }}"
           MESSAGE=":x: **Newman Tests Failed!**\n"
           MESSAGE+="**PR:** $PR_TITLE\n"
-          MESSAGE+="**Author:** <https://github.com/$PR_AUTHOR>\n"
-          MESSAGE+="[PR Link]($PR_URL)\n"
-          MESSAGE+="[CI Run]($RUN_URL)\n"
-          MESSAGE+="[PHP 8.2 Report]($PHP82_URL)\n"
-          MESSAGE+="[PHP 8.3 Report]($PHP83_URL)\n"
-          MESSAGE+="$DISCORD_MENTION"
+          MESSAGE+="PR Link: <$PR_URL>\n"
+          MESSAGE+="CI Run: <$RUN_URL>\n"
+          MESSAGE+="PHP 8.2 Report: <$PHP82_URL>\n"
+          MESSAGE+="PHP 8.3 Report: <$PHP83_URL>\n"
+          MESSAGE+="Maintainer: <@1362087975906967736>\n"
+          MESSAGE+="Author: $DISCORD_MENTION"
 
           curl -H "Content-Type: application/json" \
                -X POST \
@@ -621,8 +621,8 @@ jobs:
         run: |
           MESSAGE=":x: **CI Failed (non-Newman error)**\n"
           MESSAGE+="**PR:** $PR_TITLE\n"
-          MESSAGE+="[PR Link]($PR_URL)\n"
-          MESSAGE+="[CI Run]($RUN_URL)\n"
+          MESSAGE+="PR Link: <$PR_URL>\n"
+          MESSAGE+="CI Run: <$RUN_URL>\n"
           MESSAGE+="Maintainer: $MAINTAINER_MENTION\n"
           MESSAGE+="Author: $PR_MENTION"
 
@@ -655,10 +655,10 @@ jobs:
           PHP83_URL="${{ steps.urls.outputs.php83_url }}"
           MESSAGE=":white_check_mark: **CI Passed Successfully**\n"
           MESSAGE+="**PR:** $PR_TITLE\n"
-          MESSAGE+="[PR Link]($PR_URL)\n"
-          MESSAGE+="[CI Run]($RUN_URL)\n"
-          MESSAGE+="[PHP 8.2 Report]($PHP82_URL)\n"
-          MESSAGE+="[PHP 8.3 Report]($PHP83_URL)\n"
+          MESSAGE+="PR Link: <$PR_URL>\n"
+          MESSAGE+="CI Run: <$RUN_URL>\n"
+          MESSAGE+="PHP 8.2 Report: <$PHP82_URL>\n"
+          MESSAGE+="PHP 8.3 Report: <$PHP83_URL>\n"
           MESSAGE+="<@1355093873323671742>"  # vidkazan
 
           curl -H "Content-Type: application/json" \
