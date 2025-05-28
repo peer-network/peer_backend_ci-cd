@@ -226,7 +226,7 @@ jobs:
           docker run --rm \
             --network my-network \
             curlimages/curl:$TAG \
-            curl -sf http://backend/graphql
+            curl -sf http://backendgraphql
  
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
@@ -628,7 +628,7 @@ jobs:
                -X POST \
                -d "{\"content\": \"${MESSAGE}\"}" \
                "$DISCORD_WEBHOOK_URL"
-               
+
   send_success_discord_notification:
     name: Send Discord Notification for Successful CI
     runs-on: ubuntu-latest
