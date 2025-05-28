@@ -345,9 +345,11 @@ jobs:
           fi
 
       - name: Save outcome to file
+        if: always()
         run: echo "${{ steps.outcome.outputs.outcome }}" > outcome.txt
 
       - name: Upload build outcome marker
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: outcome-${{ matrix.php-version }}
