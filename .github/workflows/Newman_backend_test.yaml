@@ -388,7 +388,7 @@ jobs:
           done
           echo "final_outcome=$result" >> $GITHUB_OUTPUT
 
-      - run: echo "Aggregated final outcome: ${{ steps.aggregate.outputs.final_outcome }}"
+      - run: echo "Aggregated final outcome ${{ steps.aggregate.outputs.final_outcome }}"
 
   aggregate_results:
     name: Aggregate Newman Results
