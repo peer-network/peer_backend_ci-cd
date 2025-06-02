@@ -211,7 +211,7 @@ jobs:
           docker run --rm \
             --network my-network \
             curlimages/curl:$TAG \
-            curl -s -X POST http://backend/graphql \
+            curl -s -X POST http://backendgraphql \
             -H "Content-Type: application/json" \
             --data '{"query":"{__typename}"}'
  
