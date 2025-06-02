@@ -131,7 +131,7 @@ jobs:
         run: grep -v DB_PASSWORD .env
  
       - name: Set Docker Image Tag
-        run: echo "IMAGE_TAG=peer-backend:${{ github.sha }}" >> $GITHUB_ENV
+        run: echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
  
       - name: Create ordered SQL init files in CI
         run: |
