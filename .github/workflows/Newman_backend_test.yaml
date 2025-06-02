@@ -407,7 +407,6 @@ jobs:
 
       - name: Scan Docker Image
         run: trivy image --exit-code 1 --severity CRITICAL,HIGH peer-backend:${{ github.sha }}
-        continue-on-error: true
 
       - name: Scan Filesystem (Composer + App)
         run: trivy fs --scanners vuln --exit-code 1 --severity CRITICAL,HIGH .
@@ -426,7 +425,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trivy-security-reports
+          name: ttrivy-security-reports-${{ matrix.php-version }}
           path: trivy_reports
 
   aggregate_outcome:
