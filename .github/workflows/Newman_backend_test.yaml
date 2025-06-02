@@ -369,6 +369,7 @@ jobs:
         with:
           name: docker-image
           path: peer-backend.tar
+          overwrite: true
 
   trivy_scan:
     name: Trivy Security Scan
