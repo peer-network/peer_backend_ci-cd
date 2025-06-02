@@ -362,6 +362,14 @@ jobs:
           name: outcome-${{ matrix.php-version }}
           path: outcome.txt
 
+      - name: Save Docker image as artifact
+        run: docker save -o peer-backend.tar peer-backend:${{ github.sha }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: peer-backend.tar
+
   trivy_scan:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
@@ -369,6 +377,14 @@ jobs:
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: .
+
+      - name: Load Docker image
+        run: docker load -i peer-backend.tar
 
       - name: Set image name
         run: echo "IMAGE_NAME=peer-backend:${{ github.sha }}" >> $GITHUB_ENV
