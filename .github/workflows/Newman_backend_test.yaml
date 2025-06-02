@@ -405,14 +405,32 @@ jobs:
       - name: Generate composer.lock (not committed)
         run: composer install --no-dev --prefer-dist --no-interaction
 
-      - name: Scan Docker Image
-        run: trivy image --exit-code 1 --severity CRITICAL,HIGH peer-backend:${{ github.sha }}
+      - name: Set Trivy Scan Outcome
+        id: trivy_outcome
+        run: |
+          result=0
+          trivy image --exit-code 1 --severity CRITICAL,HIGH $IMAGE_NAME || result=1
+          trivy fs . --scanners vuln --exit-code 1 --severity CRITICAL,HIGH || result=1
+          trivy fs . --scanners secret --exit-code 1 || result=1
 
-      - name: Scan Filesystem (Composer + App)
-        run: trivy fs --scanners vuln --exit-code 1 --severity CRITICAL,HIGH .
+          if [ "$result" -eq 0 ]; then
+            echo "outcome=success" >> $GITHUB_OUTPUT
+            echo "success" > outcome.txt
+          else
+            echo "outcome=other_failure" >> $GITHUB_OUTPUT
+            echo "other_failure" > outcome.txt
+          fi
 
-      - name: Scan for Secrets
-        run: trivy fs --scanners secret --exit-code 1 .
+      - name: Save Trivy outcome to file
+        if: always()
+        run: echo "${{ steps.trivy_outcome.outputs.outcome }}" > outcome.txt
+
+      - name: Upload Trivy build outcome marker
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outcome-${{ matrix.php-version }}
+          path: outcome.txt
 
       - name: Upload Scan Reports
         if: always()
@@ -425,7 +443,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ttrivy-security-reports-${{ matrix.php-version }}
+          name: trivy-security-reports-${{ matrix.php-version }}
           path: trivy_reports
 
   aggregate_outcome:
@@ -439,6 +457,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: outcome-*
           path: outcomes
 
       - id: aggregate
