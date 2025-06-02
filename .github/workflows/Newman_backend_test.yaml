@@ -262,7 +262,7 @@ jobs:
 
       - name: Save Newman Failure Result
         run: |
-          if [ "${{ steps.newman.outcome }}" != "success" ]; then
+          if [ "${{ steps.newman_output.outputs.outcome }}" != "0" ]; then
             echo "true" > newman_failed.txt
           else
             echo "false" > newman_failed.txt
