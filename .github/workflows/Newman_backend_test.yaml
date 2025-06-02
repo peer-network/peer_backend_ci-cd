@@ -375,17 +375,13 @@ jobs:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
     needs: build_and_test
-    if: always()
+    if: needs.build_and_test.outputs.outcome == 'success'
     strategy:
       matrix:
         php-version: ['8.2', '8.3']
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
-
-      - name: Skip Trivy Scan if Newman Failed
-        if: needs.build_and_test.outputs.outcome != 'success'
-        run: echo "Skipping Trivy scan due to previous failure" && exit 0
 
       - uses: actions/download-artifact@v4
         with:
