@@ -375,6 +375,7 @@ jobs:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
     needs: build_and_test
+    if: needs.build_and_test.outputs.outcome == 'success'
     strategy:
       matrix:
         php-version: ['8.2', '8.3']
