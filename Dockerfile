@@ -10,8 +10,9 @@ RUN apt-get update && \
         ffmpeg && \
     docker-php-ext-configure ffi && \
     docker-php-ext-install \
-        pgsql pdo pdo_pgsql bcmath xml curl gmp ffi \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+        pgsql pdo pdo_pgsql bcmath xml curl gmp ffi && \
+    php -m | grep ffi || (echo "❌ FFI NOT FOUND after install" && exit 1) && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
  
 RUN which supervisord
  
