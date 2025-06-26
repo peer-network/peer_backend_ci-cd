@@ -7,8 +7,9 @@ RUN apt-get update && \
         openssl libzip-dev zlib1g-dev libxml2-dev \
         libcurl4-openssl-dev libgmp-dev \
         libffi-dev pkg-config \
-        ffmpeg \
-    && docker-php-ext-install \
+        ffmpeg && \
+    docker-php-ext-configure ffi && \
+    docker-php-ext-install \
         pgsql pdo pdo_pgsql bcmath xml curl gmp ffi \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
  
