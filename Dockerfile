@@ -8,7 +8,7 @@ RUN apt-get update && \
         libcurl4-openssl-dev libgmp-dev \
         ffmpeg \
     && docker-php-ext-install \
-        pgsql pdo pdo_pgsql bcmath xml curl gmp \
+        pgsql pdo pdo_pgsql bcmath xml curl gmp ffi \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
  
 RUN which supervisord
@@ -49,5 +49,8 @@ COPY docker/nginx/default.conf /etc/nginx/sites-available/default
 COPY docker/supervisord.conf /etc/supervisord.conf
  
 RUN chmod 777 /tmp
+
+# Enable FFI extension
+RUN echo "ffi.enable=true" > /usr/local/etc/php/conf.d/ffi.ini
  
 EXPOSE 80
