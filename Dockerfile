@@ -6,6 +6,7 @@ RUN apt-get update && \
         git unzip curl libpq-dev postgresql-client \
         openssl libzip-dev zlib1g-dev libxml2-dev \
         libcurl4-openssl-dev libgmp-dev \
+        libffi-dev pkg-config \
         ffmpeg \
     && docker-php-ext-install \
         pgsql pdo pdo_pgsql bcmath xml curl gmp ffi \
