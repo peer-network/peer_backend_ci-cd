@@ -277,6 +277,9 @@ jobs:
           echo "Backend did not respond in time."
           exit 1
  
+      - name: Confirm FFI Extension is Enabled
+        run: docker compose exec backend php -m | grep ffi
+        
       - name: Test GraphQL Endpoint
         run: |
           TAG=latest
