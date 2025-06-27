@@ -16,7 +16,7 @@ RUN apt-get update && \
 RUN echo "extension=ffi.so" > /usr/local/etc/php/conf.d/ffi.ini && \
     echo "ffi.enable=true" >> /usr/local/etc/php/conf.d/ffi.ini
 
-RUN php -m | grep ffi || (echo "FFI NOT FOUND after install" && exit 1)
+RUN php -dextension=ffi.so -m | grep ffi || (echo "FFI NOT FOUND after install" && exit 1)
  
 RUN which supervisord
  
