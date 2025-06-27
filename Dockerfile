@@ -13,11 +13,11 @@ RUN apt-get update && \
         pgsql pdo pdo_pgsql bcmath xml  curl gmp ffi && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN echo "extension=ffi.so" > /usr/local/etc/php/conf.d/ffi.ini && \
+RUN echo "extension=/usr/local/lib/php/extensions/no-debug-non-zts-*/ffi.so" > /usr/local/etc/php/conf.d/ffi.ini && \
     echo "ffi.enable=true" >> /usr/local/etc/php/conf.d/ffi.ini
 
-RUN php -dextension=ffi.so -m | grep ffi || (echo "FFI NOT FOUND after install" && exit 1)
- 
+RUN php -m | grep ffi || (echo "FFI NOT FOUND after install" && exit 1)
+
 RUN which supervisord
  
 RUN curl -sS https://getcomposer.org/installer | php && \
