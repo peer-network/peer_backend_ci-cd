@@ -11,8 +11,12 @@ RUN apt-get update && \
     docker-php-ext-configure ffi && \
     docker-php-ext-install \
         pgsql pdo pdo_pgsql bcmath xml  curl gmp ffi && \
-    php -m | grep ffi || (echo "❌ FFI NOT FOUND after install" && exit 1) && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN echo "extension=ffi.so" > /usr/local/etc/php/conf.d/ffi.ini && \
+    echo "ffi.enable=true" >> /usr/local/etc/php/conf.d/ffi.ini
+
+RUN php -m | grep ffi || (echo "FFI NOT FOUND after install" && exit 1)
  
 RUN which supervisord
  
@@ -52,8 +56,5 @@ COPY docker/nginx/default.conf /etc/nginx/sites-available/default
 COPY docker/supervisord.conf /etc/supervisord.conf
  
 RUN chmod 777 /tmp
-
-# Enable FFI extension
-RUN echo "ffi.enable=true" > /usr/local/etc/php/conf.d/ffi.ini
  
 EXPOSE 80
