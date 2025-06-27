@@ -30,7 +30,7 @@ WORKDIR /var/www/html
  
 COPY . .
 
-RUN . /root/.cargo/env && cargo build --release
+RUN if [ -f tokencalculations/Cargo.toml ]; then cd tokencalculations && . /root/.cargo/env && cargo build --release; fi
  
 RUN chown -R www-data:www-data /var/www/
  
