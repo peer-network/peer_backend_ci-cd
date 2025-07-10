@@ -35,8 +35,12 @@ type Query {
   referralList(offset: Int, limit: Int): ReferralListResponse!
   listTodaysInteractions: ListTodaysInteractionsResponse!
   getActionPrices: GetActionPricesResponse!
+<<<<<<< HEAD
   getTransactionHistory(type: TokenMovementFilterType, direction: DirectionFilterType, start_date: String, end_date: String, limit: Int, offset: Int, sort: SortFilterType): TransactionResponse!
   postInteractions(getOnly: GetOnly!, postOrCommentId: ID!, offset: Int, limit: Int): PostInteractionResponse
+=======
+  postEligibility: PostEligibilityResponse!
+>>>>>>> adab224 (feat(post eligibility): check for eligible to make post create)
 }
 
 type Mutation {
@@ -251,6 +255,13 @@ type DailyFreeResponse {
   name: String!
   used: Int!
   available: Int!
+}
+
+type PostEligibilityResponse {
+  status: String!
+  ResponseCode: String!
+  postId: String!
+  eligibilityToken: String!
 }
 
 type CurrentLiquidity {

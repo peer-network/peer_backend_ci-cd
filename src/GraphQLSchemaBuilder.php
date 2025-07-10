@@ -1678,60 +1678,7 @@ class GraphQLSchemaBuilder
                 'nextAttemptAt' => function (array $root): string {
                     return $root['nextAttemptAt'] ?? '';
                 },
-            ],
-             'TransactionResponse' => [
-                'status' => function (array $root): string {
-                    $this->logger->info('Query.TransactionResponse Resolvers');
-                    return $root['status'] ?? '';
-                },
-                'responseCode' => function (array $root): string {
-                    return $root['ResponseCode'] ?? '';
-                },
-                'affectedRows' => function (array $root): array {
-                    return $root['affectedRows'] ?? [];
-                },
-            ],
-            'Transaction' => [
-                'transactionid' => function (array $root): string {
-                    return $root['transactionid'] ?? '';
-                },
-                'transuniqueid' => function (array $root): string {
-                    return $root['transuniqueid'] ?? '';
-                },
-                'transactiontype' => function (array $root): string {
-                    return $root['transactiontype'] ?? '';
-                },
-                'senderid' => function (array $root): string {
-                    return $root['senderid'] ?? '';
-                },
-                'recipientid' => function (array $root): string {
-                    return $root['recipientid'] ?? '';
-                },
-                'tokenamount' => function (array $root): float {
-                    return $root['tokenamount'] ?? 0;
-                },
-                'transferaction' => function (array $root): string {
-                    return $root['transferaction'] ?? '';
-                },
-                'message' => function (array $root): string {
-                    return $root['message'] ?? '';
-                },
-                'createdat' => function (array $root): string {
-                    return $root['createdat'] ?? '';
-                },
-            ],
-            'PostInteractionResponse' => [
-                'status' => function (array $root): string {
-                    $this->logger->info('Query.PostInteractionResponse Resolvers');
-                    return $root['status'] ?? '';
-                },
-                'ResponseCode' => function (array $root): string {
-                    return $root['ResponseCode'] ?? '';
-                },
-                'affectedRows' => function (array $root): array {
-                    return $root['affectedRows'] ?? [];
-                },
-            ],
+            ],                       
         ];
     }
 
@@ -1775,8 +1722,6 @@ class GraphQLSchemaBuilder
             'getReferralInfo' => fn(mixed $root, array $args) => $this->resolveReferralInfo(),
             'referralList' => fn(mixed $root, array $args) => $this->resolveReferralList($args),
             'getActionPrices' => fn(mixed $root, array $args) => $this->resolveActionPrices(),
-            'getTransactionHistory' => fn(mixed $root, array $args) => $this->transactionsHistory($args),
-            'postInteractions' => fn(mixed $root, array $args) => $this->postInteractions($args),
         ];
     }
 
@@ -3460,4 +3405,5 @@ class GraphQLSchemaBuilder
             return $this->respondWithError(40901);
         }
     }
+
 }

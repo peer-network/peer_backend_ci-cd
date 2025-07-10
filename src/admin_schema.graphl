@@ -45,8 +45,6 @@ type Query {
   dailygemsresults(day: DayFilterType!): DailyGemsResultsResponse!
   getReferralInfo: ReferralInfoResponse!
   referralList(offset: Int, limit: Int): ReferralListResponse!
-  getTransactionHistory(type: TokenMovementFilterType, direction: DirectionFilterType, start_date: String, end_date: String, limit: Int, offset: Int, sort: SortFilterType): TransactionResponse!
-  postInteractions(getOnly: GetOnly!, postOrCommentId: ID!, offset: Int, limit: Int): PostInteractionResponse
 }
 
 type Mutation {
@@ -215,6 +213,13 @@ enum DayFilterType {
   W0
   M0
   Y0
+}
+
+type PostEligibilityResponse {
+  status: String!
+  ResponseCode: String!
+  postId: String!
+  eligibilityToken: String!
 }
 
 type ListTodaysInteractionsResponse {
