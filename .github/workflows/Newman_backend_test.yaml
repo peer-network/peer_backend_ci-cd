@@ -64,7 +64,6 @@ jobs:
                -X POST \
                -d "{\"content\": \"$MESSAGE\"}" \
                "$DISCORD_WEBHOOK_URL"
- 
   fail_outdated_branch:
     name: Block CI Due to Outdated Branch
     runs-on: ubuntu-latest
