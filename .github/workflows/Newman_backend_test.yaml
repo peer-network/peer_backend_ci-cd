@@ -334,7 +334,6 @@ jobs:
           done
           echo "Backend did not respond in time."
           exit 1
-
       - name: Confirm PHP FFI is enabled
         run: docker compose exec backend php -m | grep ffi || echo "FFI not listed in php -m"
 
