@@ -3574,7 +3574,7 @@
 					"script": {
 						"exec": [
 							"pm.test(\"ResponseCode is correct\", function () {",
-							"    pm.expect(pm.response.text()).to.include(\"31007\");",
+							"    pm.expect(pm.response.text()).to.include(\"30301\");",
 							"});",
 							"pm.test(\"Status is correct\", function () {",
 							"    pm.expect(pm.response.text()).to.include('\"status\":\"error\"');",
@@ -3603,7 +3603,7 @@
 				"body": {
 					"mode": "graphql",
 					"graphql": {
-						"query": "mutation {\n  register(input: {\n    email: \"{{random_email}}\",\n    password: \"{{invalid_username}}\",\n    username: \"{{username}}\",\n    referralUuid: \"{{uuid}}\"\n  }) {\n    status\n    ResponseCode\n    userid\n  }\n}",
+						"query": "mutation {\n  register(input: {\n    email: \"{{random_email}}\",\n    password: \"{{invalid_username}}\",\n    username: \"{{username}}\",\n    referralUuid: \"\"\n  }) {\n    status\n    ResponseCode\n    userid\n  }\n}",
 						"variables": ""
 					}
 				},
@@ -3620,6 +3620,30 @@
 				}
 			},
 			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"let accessToken = pm.environment.get(\"accessToken\")"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"pm.test(\"Query is successful\", function () {",
+					"    pm.response.to.have.status(200);",
+					"});"
+				]
+			}
 		}
 	]
 }
