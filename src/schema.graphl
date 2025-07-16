@@ -613,6 +613,7 @@ input PostInput {
   media: [String!]
   cover: [String!]
   tags: [String!]
+  uploadedFiles: String
 }
 
 input ChatInput {
