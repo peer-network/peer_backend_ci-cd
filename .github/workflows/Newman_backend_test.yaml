@@ -456,13 +456,12 @@ jobs:
           name: backend-error-log-${{ matrix.php-version }}
           path: logs/error/errorlog.txt
           
-      - name: Upload Newman Report for PHP ${{ matrix.php-version }}
+      - name: Upload Combined Newman Report
         uses: actions/upload-artifact@v4
         with:
           name: docker_newman_report-${{ matrix.php-version }}
           path: ${{ github.workspace }}/newman/reports/report.html
-        continue-on-error: true
-          
+
       - name: List Running containers
         run: docker ps -a
  
