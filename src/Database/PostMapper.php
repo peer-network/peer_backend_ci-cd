@@ -2,6 +2,7 @@
 
 namespace Fawaz\Database;
 
+use Fawaz\App\Models\MultipartPost;
 use PDO;
 use Fawaz\App\Post;
 use Fawaz\App\PostAdvanced;
@@ -829,6 +830,7 @@ class PostMapper extends PeerMapper
         }
     }
 
+<<<<<<< HEAD
     
     /**
      * Get Interactions based on Filter 
@@ -902,6 +904,41 @@ class PostMapper extends PeerMapper
                 'error' => $e->getMessage(),
             ]);
             return [];
+=======
+    /**
+     * Move Uploaded File to Media Folder
+     */
+    public function handelFileMoveToMedia(string $uploadedFiles): array 
+    {
+        $fileObjs = explode(',', $uploadedFiles);
+
+        $uploadedFilesObj = [];
+        try{
+            if(is_array($fileObjs) && !empty($fileObjs)){
+                $multipartPost = new MultipartPost(['media' => $fileObjs], [], false);
+                $uploadedFilesObj = $multipartPost->moveFileTmpToMedia();
+            }
+        }catch(\Exception $e){
+            $this->logger->info("PostMapper.handelFileMoveToMedia Error". $e->getMessage());
+        }
+
+        return $uploadedFilesObj;
+    }
+
+    /**
+     * Revert Moved File to /tmp Folder
+     */
+    public function revertFileToTmp(string $uploadedFiles): void
+    {
+        $fileObjs = explode(',', $uploadedFiles);
+        try{
+            if(is_array($fileObjs) && !empty($fileObjs)){
+                $multipartPost = new MultipartPost(['media' => $fileObjs], [], false);
+                $multipartPost->revertFileToTmp();
+            }
+        }catch(\Exception $e){
+            $this->logger->info("PostMapper.revertFileToTmp Error". $e->getMessage());
+>>>>>>> 9991be5 (feat(move & revert files): add new methods for move and revert files)
         }
     }
 }
