@@ -46,6 +46,8 @@ RUN composer require --no-update php-ffmpeg/php-ffmpeg
 RUN composer install --no-dev --prefer-dist --no-interaction \
 && composer dump-autoload -o
  
+RUN composer dump-autoload -o
+
 RUN echo "log_errors = On" >> /usr/local/etc/php/conf.d/docker-php-error.ini \
 && echo "display_errors = Off" >> /usr/local/etc/php/conf.d/docker-php-error.ini \
 && echo "display_startup_errors = Off" >> /usr/local/etc/php/conf.d/docker-php-error.ini \
