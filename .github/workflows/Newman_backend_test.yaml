@@ -162,10 +162,11 @@ jobs:
             -w /app \
             peer-backend:${{ github.sha }} \
               sh -c "\
-              curl -Ls https://github.com/phpstan/phpstan/releases/latest/download/phpstan.phar -o phpstan.phar && \
-              chmod +x phpstan.phar && \
-              ./phpstan.phar analyse --configuration=phpstan.neon --memory-limit=512M"
-
+                curl -Ls https://github.com/phpstan/phpstan/releases/latest/download/phpstan.phar -o phpstan.phar && \
+                chmod +x phpstan.phar && \
+                COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --prefer-dist && \
+                ./phpstan.phar analyse --configuration=phpstan.neon --memory-limit=512M"
+                
   build_and_test:
     name: Build And Run Postman Tests
     runs-on: ubuntu-latest
