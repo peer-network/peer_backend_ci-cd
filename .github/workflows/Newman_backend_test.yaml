@@ -158,15 +158,12 @@ jobs:
       - name: Run PHPStan inside container
         run: |
           docker run --rm \
-            -v ${{ github.workspace }}:/app \
-            -w /app \
-            peer-backend:${{ github.sha }} \
-              sh -c "\
-                git config --global --add safe.directory /app && \
-                curl -Ls https://github.com/phpstan/phpstan/releases/latest/download/phpstan.phar -o phpstan.phar && \
-                chmod +x phpstan.phar && \
-                COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --prefer-dist && \
-                ./phpstan.phar analyse --configuration=phpstan.neon --memory-limit=512M"
+          -v ${{ github.workspace }}:/app \
+          -w /app \
+          peer-backend:${{ matrix.php-version }} \
+            sh -c "\
+              git config --global --add safe.directory /app && \
+              phpstan analyse --configuration=phpstan.neon --memory-limit=512M"
 
   build_and_test:
     name: Build And Run Postman Tests
