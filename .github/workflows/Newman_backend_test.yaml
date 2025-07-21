@@ -164,7 +164,7 @@ jobs:
               sh -c "\
               curl -Ls https://github.com/phpstan/phpstan/releases/latest/download/phpstan.phar -o phpstan.phar && \
               chmod +x phpstan.phar && \
-              ./phpstan.phar analyse --configuration=phpstan.neon"
+              ./phpstan.phar analyse --configuration=phpstan.neon --memory-limit=512M"
 
   build_and_test:
     name: Build And Run Postman Tests
