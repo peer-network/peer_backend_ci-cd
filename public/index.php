@@ -10,6 +10,7 @@ use Slim\Factory\AppFactory;
 use Slim\Handlers\Strategies\RequestHandler;
 
 require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../src/Utils/constants.php';
 
 $settings = (require __DIR__ . '/../src/config/settings.php')(
     $_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'DEVELOPMENT'
