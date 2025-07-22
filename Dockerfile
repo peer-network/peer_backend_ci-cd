@@ -43,7 +43,7 @@ RUN mkdir -p /var/www/html/runtime-data/logs \
 
 RUN composer require --no-update php-ffmpeg/php-ffmpeg
  
-RUN composer install --no-dev --prefer-dist --no-interaction \
+RUN composer install --prefer-dist --no-interaction \
 && composer dump-autoload -o
 
 # ✅ Install PHPStan globally
