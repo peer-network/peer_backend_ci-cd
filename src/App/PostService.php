@@ -701,26 +701,19 @@ class PostService
                         'status' => 'error',
                         'ResponseCode' => 0000, // Not eligible for upload for post
                     ];
+            $hasFreeDaily = false;
+
             if ($limit > 0) {
                 $DailyUsage = $this->dailyFreeService->getUserDailyUsage($this->currentUserId, $actionMap);
-
                 if ($DailyUsage < $limit) {
                     // generate PostId and JWT
-
-                    $response = [
-                        'status' => 'success',
-                        'ResponseCode' => 0000, // You are eligible for post upload
-                    ];
-                    $response['postId'] = self::generateUUID();
-                    $response['eligibilityToken'] = self::generateJwt();
-
-                    return $response;
+                    $hasFreeDaily = true;
                 }
             }
 
             $balance = $this->walletService->getUserWalletBalance($this->currentUserId);
             // Return ResponseCode with Daily Free Code
-            if ($balance < $price) {
+            if ($balance < $price && !$hasFreeDaily) {
                 $this->logger->warning('Insufficient wallet balance', ['userId' => $this->currentUserId, 'balance' => $balance, 'price' => $price]);
                 return $this->respondWithError(51301);
             }
@@ -731,7 +724,7 @@ class PostService
                         'ResponseCode' => 0000, // You are eligible for post upload
                     ];
             $response['postId'] = self::generateUUID();
-            $response['eligibilityToken'] = self::generateJwt();
+            $response['eligibilityToken'] = $this->tokenService->createAccessTokenWithCustomExpriy($this->currentUserId, 300);
 
             return $response;
             
@@ -744,6 +737,7 @@ class PostService
         }
     }
 
+<<<<<<< HEAD
     /**
      * Check for If user eligibile to make a post or not
      * 
@@ -781,4 +775,6 @@ class PostService
 >>>>>>> 0bcc5d6 (feat(check for media type): validate media type of each file)
 =======
 >>>>>>> 0ca2cf4 (feat(reuse of methods): include methods in traits)
+=======
+>>>>>>> 22f5c1a (feat(jwt update): update logic of jwt generation)
 }
