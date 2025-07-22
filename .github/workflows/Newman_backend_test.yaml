@@ -978,26 +978,30 @@ jobs:
     name: Notify PHPStan Failure
     runs-on: ubuntu-latest
     needs: [aggregate_outcome, map_pr_to_discord]
-    if: needs.aggregate_outcome.outputs.final_outcome == 'phpstan_failed'
+    if: always()
     steps:
       - name: Send Discord Alert for PHPStan Failure
+        if: needs.aggregate_outcome.outputs.final_outcome == 'phpstan_failed'
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
           PR_MENTION: ${{ needs.map_pr_to_discord.outputs.discord_mention }}
+          MAINTAINER_MENTION: <@1362087975906967736>
         run: |
           MESSAGE=":x: **PHPStan Static Analysis Failed!**\n"
           MESSAGE+="**PR:** $PR_TITLE\n"
-          MESSAGE+="Link: <$PR_URL>\n"
+          MESSAGE+="PR Link: <$PR_URL>\n"
           MESSAGE+="CI Run: <$RUN_URL>\n"
+          MESSAGE+="Maintainer: $MAINTAINER_MENTION\n"
           MESSAGE+="Author: $PR_MENTION"
+          MESSAGE+="\n**Note**: You can download Artifacts in the Actions tab to inspect logs and output immediately."
+
           curl -H "Content-Type: application/json" \
                -X POST \
-               -d "{\"content\": \"$MESSAGE\"}" \
+               -d "{\"content\": \"${MESSAGE}\"}" \
                "$DISCORD_WEBHOOK_URL"
-
   debug_outcome:
     runs-on: ubuntu-latest
     needs: [aggregate_outcome]
