@@ -154,9 +154,8 @@ jobs:
 
       - name: Load Docker image and tag it
         run: |
-          docker load -i peer-backend.tar | tee /tmp/image-load.log
-          IMAGE_ID=$(grep -oE 'sha256:[a-f0-9]+' /tmp/image-load.log)
-          docker tag $IMAGE_ID peer-backend:${{ matrix.php-version }}
+          IMAGE_NAME=$(docker load -i peer-backend.tar | tee /dev/stderr | grep 'Loaded image:' | awk '{print $3}')
+          docker tag $IMAGE_NAME peer-backend:${{ matrix.php-version }}
 
       - name: Run PHPStan inside container
         run: |
