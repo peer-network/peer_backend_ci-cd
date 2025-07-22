@@ -760,6 +760,7 @@ class PostService
     }
     
 
+<<<<<<< HEAD
     /**
      * generate UUID
      * 
@@ -778,4 +779,6 @@ class PostService
     }
 
 >>>>>>> 0bcc5d6 (feat(check for media type): validate media type of each file)
+=======
+>>>>>>> 0ca2cf4 (feat(reuse of methods): include methods in traits)
 }
