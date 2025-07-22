@@ -1002,12 +1002,6 @@ jobs:
                -X POST \
                -d "{\"content\": \"${MESSAGE}\"}" \
                "$DISCORD_WEBHOOK_URL"
-  debug_outcome:
-    runs-on: ubuntu-latest
-    needs: [aggregate_outcome]
-    if: always()
-    steps:
-      - run: echo "Final Outcome ${{ needs.aggregate_outcome.outputs.final_outcome }}"
 
   final_check:
     name: Fail workflow if needed
