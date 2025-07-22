@@ -160,12 +160,8 @@ jobs:
       - name: Run PHPStan inside container
         run: |
           docker run --rm \
-          -v ${{ github.workspace }}:/app \
-          -w /app \
-          peer-backend:${{ matrix.php-version }} \
-            sh -c "\
-              git config --global --add safe.directory /app && \
-              phpstan analyse --autoload-file=vendor/autoload.php --configuration=phpstan.neon --memory-limit=512M"
+            peer-backend:${{ matrix.php-version }} \
+              sh -c "phpstan analyse --configuration=phpstan.neon --memory-limit=512M"
 
   build_and_test:
     name: Build And Run Postman Tests
