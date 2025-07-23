@@ -1678,7 +1678,22 @@ class GraphQLSchemaBuilder
                 'nextAttemptAt' => function (array $root): string {
                     return $root['nextAttemptAt'] ?? '';
                 },
-            ],                       
+            ],
+            'PostEligibilityResponse' => [
+                'status' => function (array $root): string {
+                    $this->logger->info('Query.PostEligibilityResponse Resolvers');
+                    return $root['status'] ?? '';
+                },
+                'ResponseCode' => function (array $root): string {
+                    return $root['ResponseCode'] ?? '';
+                },
+                'postId' => function (array $root): string {
+                    return $root['postId'] ?? '';
+                },
+                'eligibilityToken' => function (array $root): string {
+                    return $root['eligibilityToken'] ?? '';
+                }
+            ],
         ];
     }
 
