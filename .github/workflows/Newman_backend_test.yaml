@@ -903,13 +903,15 @@ jobs:
           name: docker_newman_report-8.3
           path: reports/php-8.3
 
-      - name: Prepare report files
+      - name: Prepare versioned HTMLExtra report
         run: |
-          mkdir -p final_reports
-          cp reports/php-8.2/report.html final_reports/index_82.html
-          cp reports/php-8.3/report.html final_reports/index_83.html
+          mkdir -p final_reports/reports/${{ github.run_id }}/php-8.2
+          mkdir -p final_reports/reports/${{ github.run_id }}/php-8.3
 
-      - name: Push reports to peer_backend_reports
+          cp reports/php-8.2/report.html final_reports/reports/${{ github.run_id }}/php-8.2/report.html
+          cp reports/php-8.3/report.html final_reports/reports/${{ github.run_id }}/php-8.3/report.html
+
+      - name: Deploy HTMLExtra Reports to peer_backend_reports
         run: |
           cd final_reports
           git init
