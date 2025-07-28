@@ -156,8 +156,13 @@ class Post implements Hashable
                 'required' => false,
                 'validators' => [
                     ['name' => 'StringLength', 'options' => [
+<<<<<<< HEAD
                         'min' => $postConst['MEDIA']['MIN_LENGTH'],
                         'max' => $postConst['MEDIA']['MAX_LENGTH'],
+=======
+                        'min' => 30,
+                        'max' => 3000, // because we are now allow 20 images files
+>>>>>>> f71a632 (feat(validation): fix media length validation)
                     ]],
                     ['name' => 'isString'],
                 ],
