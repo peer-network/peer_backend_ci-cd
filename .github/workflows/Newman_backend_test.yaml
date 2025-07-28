@@ -918,7 +918,7 @@ jobs:
           git checkout -b gh-pages
           git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
-          git remote add origin https://x-access-token:${{ secrets.REPORTS_DEPLOY_TOKEN }}@github.com/WisdomNwaiwu/peer_backend_reports.git
+          git remote add origin https://x-access-token:${{ secrets.REPORTS_DEPLOY_TOKEN }}@github.com/peer-network/peer-backend-reports.git
           git add .
           git commit -m "Deploy reports for run $GITHUB_RUN_ID"
           git push --force origin gh-pages
