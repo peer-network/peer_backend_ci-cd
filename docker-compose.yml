@@ -113,6 +113,7 @@ services:
       sh -c '
         chown -R node:node /etc/newman/media_files &&
         chmod -R u+rwX,go+rX /etc/newman/media_files &&
+        touch /etc/newman/media_files/__test_write && rm /etc/newman/media_files/__test_write &&
         mkdir -p /etc/newman/reports &&
         node /etc/newman/merge-collections.js &&
         newman run /etc/newman/reports/merged.json \
