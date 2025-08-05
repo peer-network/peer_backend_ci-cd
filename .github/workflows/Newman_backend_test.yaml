@@ -354,7 +354,7 @@ jobs:
       - name: Check Backend Logs
         run: |
           echo "Fetching backend container logs..."
-          docker logs $(docker ps -q -f "name=peer_backend-backend-1")
+          docker logs $(docker ps -q -f "name= peer_backend_ci-cd-backend-1")
  
       - name: Check Backend Connection (using curl directly)
         run: |
@@ -385,6 +385,11 @@ jobs:
           jq '.values += [{"key": "BACKEND_URL", "value": "http://backend", "type": "default", "enabled": true}]' \
             tests/postman_collection/graphql_postman_environment.json > temp_env.json
           mv temp_env.json tests/postman_collection/graphql_postman_environment.json
+
+      - name: Debug media_files before running Newman
+        run: |
+          echo "Debug: Listing media files inside /etc/newman/media_files..."
+          docker compose run --rm newman ls -l /etc/newman/media_files || echo "media_files not found"
  
       - name: Run Postman Tests in Newman Container
         id: newman
