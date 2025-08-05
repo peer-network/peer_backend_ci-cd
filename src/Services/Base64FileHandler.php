@@ -98,7 +98,10 @@ class Base64FileHandler
             if (!empty($fileInfo['video']['resolution_x']) && !empty($fileInfo['video']['resolution_y'])) {
               $width = $fileInfo['video']['resolution_x'];
               $height = $fileInfo['video']['resolution_y'];
+<<<<<<< HEAD
 
+=======
+>>>>>>> f742f51 (feat(image orientation): set width and height of image and video)
                 // Check for Orientation
                 if(isset($fileInfo['jpg']['exif']['IFD0']['Orientation'])){
                     $Orientation = $fileInfo['jpg']['exif']['IFD0']['Orientation'] ??= 1;
@@ -115,7 +118,11 @@ class Base64FileHandler
                         $height = $fileInfo['video']['resolution_x'];
                     }
                 }
+<<<<<<< HEAD
 
+=======
+                
+>>>>>>> f742f51 (feat(image orientation): set width and height of image and video)
               $gcd = gmp_intval(gmp_gcd($width, $height));
               $ratio = ($width / $gcd) . ':' . ($height / $gcd);
               $auflg = "{$width}x{$height}";
