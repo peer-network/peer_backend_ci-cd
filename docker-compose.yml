@@ -119,7 +119,7 @@ services:
         mkdir -p /etc/newman/reports &&
         node /etc/newman/merge-collections.js &&
         sed -zE \"s/\\\"src\\\":\\s*\\[\\s*\\\"([^\\\"]+)\\\"\\s*\\]/\\\"src\\\": \\\"\\1\\\"/g\" -i /etc/newman/reports/merged.json &&
-        grep \"src\" /etc/newman/reports/merged.json &&
+        grep src /etc/newman/reports/merged.json &&
         newman run /etc/newman/reports/merged.json \
           --environment /etc/newman/graphql_postman_environment.json \
           --reporters cli,htmlextra \
