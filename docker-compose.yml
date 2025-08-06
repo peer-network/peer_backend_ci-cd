@@ -117,22 +117,28 @@ services:
         touch /etc/newman/media_files/__test_write && rm /etc/newman/media_files/__test_write
         mkdir -p /etc/newman/reports
         node /etc/newman/merge-collections.js
-        jq '\''walk(
-          if type == "object" and (.src != null) then
-            if (.src | type == "string") then
-              .src = [ { "file": .src } ]
-            elif (.src | type == "array") and (.src[0] | type == "string") then
-              .src = [ { "file": .src[0] } ]
-            elif (.src | type == "array") and (.src[0] | type == "object" and .src[0].file != null) then
-              .src = .src
-            else
-              del(.src)
-            end
+
+        jq '\''def normalize_src:
+          . as $in
+          | if type == "object" and ($in | has("src")) then
+              if $in.src | type == "string" then
+                $in.src = [ { "file": $in.src } ]
+              elif $in.src | type == "array" and ($in.src[0] | type == "string") then
+                $in.src = [ { "file": $in.src[0] } ]
+              elif $in.src | type == "array" and ($in.src[0] | type == "object") then
+                $in.src
+              else
+                del($in.src)
+              end
           else
-            .
-          end
-        )'\'' /etc/newman/reports/merged.json > /etc/newman/reports/merged_clean.json
+            $in
+          end;
+
+          walk(if type == "object" then normalize_src else . end)
+        '\'' /etc/newman/reports/merged.json > /etc/newman/reports/merged_clean.json
+
         mv /etc/newman/reports/merged_clean.json /etc/newman/reports/merged.json
+
         newman run /etc/newman/reports/merged.json \
           --environment /etc/newman/graphql_postman_environment.json \
           --reporters cli,htmlextra \
