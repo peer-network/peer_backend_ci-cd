@@ -1,4 +1,8 @@
 FROM node:alpine
+
+
+# Install jq (use apk instead of apt-get)
+RUN apk add --no-cache jq
  
 RUN npm install -g newman newman-reporter-htmlextra
  
