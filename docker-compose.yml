@@ -109,7 +109,7 @@ services:
         - ./tests/postman_collection:/etc/newman
         - ./tests/media_files:/etc/newman/media_files
         - ./newman/reports:/etc/newman/reports
-    entrypoint: >
+    entrypoint: |
       sh -c '
         chown -R node:node /etc/newman/media_files &&
         chmod -R u+rwX,go+rX /etc/newman/media_files &&
@@ -118,14 +118,14 @@ services:
         touch /etc/newman/media_files/__test_write && rm /etc/newman/media_files/__test_write &&
         mkdir -p /etc/newman/reports &&
         node /etc/newman/merge-collections.js &&
-        sed -zE \"s/\\\"src\\\":\\s*\\[\\s*\\\"([^\\\"]+)\\\"\\s*\\]/\\\"src\\\": \\\"\\1\\\"/g\" -i /etc/newman/reports/merged.json &&
+        sed -zE "s/\"src\":\\s*\\[\\s*\"([^\"]+)\"\\s*\\]/\"src\": \"\\1\"/g" -i /etc/newman/reports/merged.json &&
         grep src /etc/newman/reports/merged.json &&
         newman run /etc/newman/reports/merged.json \
           --environment /etc/newman/graphql_postman_environment.json \
           --reporters cli,htmlextra \
           --reporter-htmlextra-export /etc/newman/reports/report.html \
           --reporter-htmlextra-logs true
-        '
+      '
     restart: "no"
     networks:
       - my-network
