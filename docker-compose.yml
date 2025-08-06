@@ -118,6 +118,7 @@ services:
         touch /etc/newman/media_files/__test_write && rm /etc/newman/media_files/__test_write &&
         mkdir -p /etc/newman/reports &&
         node /etc/newman/merge-collections.js &&
+        sed -E "s/\"src\": \\[\\s*\\\"([^\"]+)\\\"\\s*\\]/\"src\": \"\\1\"/g" /etc/newman/reports/merged.json -i &&
         newman run /etc/newman/reports/merged.json \
           --environment /etc/newman/graphql_postman_environment.json \
           --reporters cli,htmlextra \
