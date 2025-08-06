@@ -118,24 +118,16 @@ services:
         touch /etc/newman/media_files/__test_write && rm /etc/newman/media_files/__test_write &&
         mkdir -p /etc/newman/reports &&
         node /etc/newman/merge-collections.js &&
-        jq "walk(
-          if type == \"object\" and (.src != null) then
-            if (.src | type == \"array\") then
-              if (.src | length == 1) then
-                .src = .src[0]
-              elif (.src | length == 0) then
-                del(.src)
-              else
-                .src = .src
-              end
-            else
-              .
-            end
+        jq 'walk(
+          if type == "object" and (.src != null and (.src | type == "string")) then
+            .src = [ { "file": .src } ]
+          elif type == "object" and (.src | type == "array") and (.src[0] | type == "string") then
+            .src = [ { "file": .src[0] } ]
           else
             .
           end
-        )" /etc/newman/reports/merged.json > /etc/newman/reports/merged_clean.json &&
-        mv /etc/newman/reports/merged_clean.json /etc/newman/reports/merged.json &&
+        )' /etc/newman/reports/merged.json > /etc/newman/reports/merged_clean.json \
+        && mv /etc/newman/reports/merged_clean.json /etc/newman/reports/merged.json
         grep src /etc/newman/reports/merged.json &&
         newman run /etc/newman/reports/merged.json \
           --environment /etc/newman/graphql_postman_environment.json \
