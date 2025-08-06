@@ -109,21 +109,21 @@ services:
         - ./tests/postman_collection:/etc/newman
         - ./tests/media_files:/etc/newman/media_files
         - ./newman/reports:/etc/newman/reports
-    entrypoint: >-
-      sh -c "
-        chown -R node:node /etc/newman/media_files &&
-        chmod -R u+rwX,go+rX /etc/newman/media_files &&
-        ls -lah /etc/newman/media_files &&
-        touch /etc/newman/media_files/__test_write && rm /etc/newman/media_files/__test_write &&
-        mkdir -p /etc/newman/reports &&
-        node /etc/newman/merge-collections.js &&
-        jq 'walk(
-          if type == \"object\" and (.src != null) then
-            if (.src | type == \"string\") then
-              .src = [ { \"file\": .src } ]
-            elif (.src | type == \"array\") and (.src[0] | type == \"string\") then
-              .src = [ { \"file\": .src[0] } ]
-            elif (.src | type == \"array\") and (.src[0] | type == \"object\" and .src[0].file != null) then
+    entrypoint: |
+      sh -c '
+        chown -R node:node /etc/newman/media_files
+        chmod -R u+rwX,go+rX /etc/newman/media_files
+        ls -lah /etc/newman/media_files
+        touch /etc/newman/media_files/__test_write && rm /etc/newman/media_files/__test_write
+        mkdir -p /etc/newman/reports
+        node /etc/newman/merge-collections.js
+        jq '\''walk(
+          if type == "object" and (.src != null) then
+            if (.src | type == "string") then
+              .src = [ { "file": .src } ]
+            elif (.src | type == "array") and (.src[0] | type == "string") then
+              .src = [ { "file": .src[0] } ]
+            elif (.src | type == "array") and (.src[0] | type == "object" and .src[0].file != null) then
               .src = .src
             else
               del(.src)
@@ -131,15 +131,14 @@ services:
           else
             .
           end
-        )' /etc/newman/reports/merged.json > /etc/newman/reports/merged_clean.json &&
-        mv /etc/newman/reports/merged_clean.json /etc/newman/reports/merged.json &&
-        grep src /etc/newman/reports/merged.json &&
+        )'\'' /etc/newman/reports/merged.json > /etc/newman/reports/merged_clean.json
+        mv /etc/newman/reports/merged_clean.json /etc/newman/reports/merged.json
         newman run /etc/newman/reports/merged.json \
           --environment /etc/newman/graphql_postman_environment.json \
           --reporters cli,htmlextra \
           --reporter-htmlextra-export /etc/newman/reports/report.html \
           --reporter-htmlextra-logs true
-      "
+      '
     restart: "no"
     networks:
       - my-network
