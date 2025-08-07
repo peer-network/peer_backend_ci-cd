@@ -115,14 +115,11 @@ services:
     command: >
       sh -c '
         set -e
-        chown -R node:node /etc/newman/media_files
-        chmod -R u+rwX,go+rX /etc/newman/media_files
-        touch /etc/newman/media_files/__test && rm /etc/newman/media_files/__test
         node /etc/newman/merge-collections.js
-        echo "Before jq transform (file upload entries):"
-        echo "DEBUG: Full request object tree:"
-        jq '.item[]?.request?' /etc/newman/reports/merged.json || true
-        jq \'.item[]?.request?.body?.formdata?[]? | select(.type == "file")\' /etc/newman/reports/merged.json || true
+
+        echo "BEFORE jq transform (file upload src):"
+        jq ".item[]?.request?.body?.formdata?[]? | select(.type == \"file\") | {key, src}" /etc/newman/reports/merged.json || true
+
         jq '\''walk(
           if type == "object" and (.type? == "file" and .src? != null) then
             if (.src | type == "string") then
@@ -138,11 +135,12 @@ services:
             .
           end
         )'\'' /etc/newman/reports/merged.json > /etc/newman/reports/merged_tmp.json
+
         mv /etc/newman/reports/merged_tmp.json /etc/newman/reports/merged.json
-        echo "After jq transform (file upload entries):"
-        jq \'.item[]?.request?.body?.formdata?[]? | select(.type == "file")\' /etc/newman/reports/merged.json || true
-        echo "Full request bodies:"
-        jq \'.item[]?.request?.body?\' /etc/newman/reports/merged.json || true
+
+        echo "AFTER jq transform (file upload src):"
+        jq ".item[]?.request?.body?.formdata?[]? | select(.type == \"file\") | {key, src}" /etc/newman/reports/merged.json || true
+
         newman run /etc/newman/reports/merged.json \
           --environment /etc/newman/graphql_postman_environment.json \
           --reporters cli,htmlextra \
