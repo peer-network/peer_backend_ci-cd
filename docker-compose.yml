@@ -121,8 +121,8 @@ services:
         jq \".item[]?.request?.body?.formdata?[]? | select(.type == \\\"file\\\") | {key, src}\" /etc/newman/reports/merged.json || true
 
         echo 'Applying jq transform...'
-        jq -n --argfile f /etc/newman/reports/merged.json '
-          $f | walk(
+        jq '
+          walk(
             if type == \"object\" and (.type? == \"file\" and .src? != null) then
               if (.src | type == \"string\") then
                 .src = [ { \"file\": .src } ]
@@ -137,7 +137,7 @@ services:
               .
             end
           )
-        ' > /etc/newman/reports/merged_tmp.json
+        ' /etc/newman/reports/merged.json > /etc/newman/reports/merged_tmp.json
 
         mv /etc/newman/reports/merged_tmp.json /etc/newman/reports/merged.json
 
