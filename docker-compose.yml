@@ -117,25 +117,24 @@ services:
         touch /etc/newman/media_files/__test_write && rm /etc/newman/media_files/__test_write
         mkdir -p /etc/newman/reports
         node /etc/newman/merge-collections.js
+        echo "BEFORE jq TRANSFORM - Raw file upload entries:"
+        jq '\''.item[]?.request?.body?.formdata?[]? | select(.type == "file")'\'' /etc/newman/reports/merged.json
         jq '\''walk(
-          if type == "object" and (.src != null) then
+          if type == "object" and (.type? == "file") and (.src != null) then
             if (.src | type == "string") then
               .src = [ { "file": .src } ]
-            elif (.src | type == "array") and ((.src | length) == 0) then
-              del(.src)
-            elif (.src | type == "array") and all(.[]; type == "string") then
-              .src = [ { "file": .src[0] } ]
-            elif (.src | type == "array") and (.src[0] | type == "object") and (.src[0] | has("file")) then
-              .src = .src
+            elif (.src | type == "array") and (all(.[]; type == "string")) then
+              .src = map({file: .})
             else
-              del(.src)
+              .
             end
           else
             .
           end
         )'\'' /etc/newman/reports/merged.json > /etc/newman/reports/merged_tmp.json && \
         mv /etc/newman/reports/merged_tmp.json /etc/newman/reports/merged.json
-        cat /etc/newman/reports/merged.json | grep '"src"'
+        echo "AFTER jq TRANSFORM - Transformed file upload entries:"
+        jq '\''.item[]?.request?.body?.formdata?[]? | select(.type == "file")'\'' /etc/newman/reports/merged.json
         newman run /etc/newman/reports/merged.json \
           --environment /etc/newman/graphql_postman_environment.json \
           --reporters cli,htmlextra \
