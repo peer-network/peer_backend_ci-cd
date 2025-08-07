@@ -139,7 +139,8 @@ services:
         mv /etc/newman/reports/merged_tmp.json /etc/newman/reports/merged.json
         echo "After jq transform (file upload entries):"
         jq \'.item[]?.request?.body?.formdata?[]? | select(.type == "file")\' /etc/newman/reports/merged.json || true
-
+        echo "Full request bodies:"
+        jq \'.item[]?.request?.body?\' /etc/newman/reports/merged.json || true
         newman run /etc/newman/reports/merged.json \
           --environment /etc/newman/graphql_postman_environment.json \
           --reporters cli,htmlextra \
