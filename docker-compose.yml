@@ -124,14 +124,15 @@ services:
         jq '
           .item |= map(
             if .request.body.formdata? then
-              .request.body.formdata |= (
-                map(select(.type == \"file\" and (.src | length > 0)))
-                | group_by(.key)
-                | map({
-                    key: .[0].key,
-                    type: \"file\",
-                    src: map(.src) | flatten | map({file: .})
-                  })
+              .request.body.formdata |= map(
+                if .type == "file" and (.src | type == "array") then
+                  .src |= map(
+                    if type == "string" then {file: .} else .
+                    end
+                  )
+                else
+                  .
+                end
               )
             else
               .
