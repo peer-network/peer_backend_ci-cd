@@ -120,12 +120,12 @@ services:
         jq '\''walk(
           if type == "object" and (.src != null) then
             if (.src | type == "string") then
-              .src = [{ "file": .src }]
+              .src = [ { "file": .src } ]
             elif (.src | type == "array") and ((.src | length) == 0) then
               del(.src)
-            elif (.src | type == "array") and ((.src[0] | type) == "string") then
-              .src = [{ "file": .src[0] }]
-            elif (.src | type == "array") and ((.src[0] | type) == "object") and (.src[0] | has("file")) then
+            elif (.src | type == "array") and all(.[]; type == "string") then
+              .src = [ { "file": .src[0] } ]
+            elif (.src | type == "array") and (.src[0] | type == "object") and (.src[0] | has("file")) then
               .src = .src
             else
               del(.src)
@@ -133,10 +133,9 @@ services:
           else
             .
           end
-        )'\'' /etc/newman/reports/merged.json > /etc/newman/reports/merged_clean.json
-        mv /etc/newman/reports/merged_clean.json /etc/newman/reports/merged.json
-        echo "Transformed file upload bodies:"
-        jq '.. | objects | select(has("src")) | select(.src != [])' /etc/newman/reports/merged.json
+        )'\'' /etc/newman/reports/merged.json > /etc/newman/reports/merged_tmp.json && \
+        mv /etc/newman/reports/merged_tmp.json /etc/newman/reports/merged.json
+        cat /etc/newman/reports/merged.json | grep '"src"'
         newman run /etc/newman/reports/merged.json \
           --environment /etc/newman/graphql_postman_environment.json \
           --reporters cli,htmlextra \
