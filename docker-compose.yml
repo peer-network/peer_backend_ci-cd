@@ -122,13 +122,13 @@ services:
         node /etc/newman/merge-collections.js &&
         echo "BEFORE jq TRANSFORM - Raw file upload entries:" &&
         jq ".item[]?.request?.body?.formdata?[]? | select(.type == \"file\")" /etc/newman/reports/merged.json &&
-        jq '\''walk(
+        jq 'walk(
           if type == "object" and (.type? == "file") and (.src? | type == "string" or type == "array") then
             if (.src | type == "string") then
-              .src = [ { "file": .src } ]
+              .src = [ .src ]
+            elif (.src | type == "array") and (all(.[]; type == "object") and .[0] | has("file")) then
+              .src = map(.file)
             elif (.src | type == "array") and (all(.[]; type == "string")) then
-              .src = map({file: .})
-            elif (.src | type == "array") and (all(.[]; type == "object")) and (.src[0] | has("file")) then
               .src = .src
             elif (.src | type == "array") and (. | length == 0) then
               del(.src)
@@ -138,7 +138,7 @@ services:
           else
             .
           end
-        )'\'' /etc/newman/reports/merged.json > /etc/newman/reports/merged_tmp.json &&
+        )' /etc/newman/reports/merged.json > /etc/newman/reports/merged_tmp.json
         mv /etc/newman/reports/merged_tmp.json /etc/newman/reports/merged.json &&
         echo "AFTER jq TRANSFORM - Transformed file upload entries:" &&
         jq ".item[]?.request?.body?.formdata?[]? | select(.type == \"file\")" /etc/newman/reports/merged.json &&
