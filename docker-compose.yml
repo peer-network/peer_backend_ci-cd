@@ -125,13 +125,15 @@ services:
               .src = [ { "file": .src } ]
             elif (.src | type == "array") and (all(.[]; type == "string")) then
               .src = map({file: .})
+            elif (.src | type == "array") and ((. | tostring | test("\\.file")) | not) then
+              .src = map({file: .})
             else
               .
             end
           else
             .
           end
-        )'\'' /etc/newman/reports/merged.json > /etc/newman/reports/merged_tmp.json && \
+        )'\'' /etc/newman/reports/merged.json > /etc/newman/reports/merged_tmp.json
         mv /etc/newman/reports/merged_tmp.json /etc/newman/reports/merged.json
         echo "AFTER jq TRANSFORM - Transformed file upload entries:"
         jq '\''.item[]?.request?.body?.formdata?[]? | select(.type == "file")'\'' /etc/newman/reports/merged.json
