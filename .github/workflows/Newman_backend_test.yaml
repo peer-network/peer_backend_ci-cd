@@ -369,49 +369,54 @@ jobs:
       - name: Rewrite GraphQL and fix /upload-post payloads in Postman collections
         run: |
           for file in tests/postman_collection/001_graphql_postman_collection.json \
-               tests/postman_collection/002_graphql_postman_collection.json \
-               tests/postman_collection/003_graphql_postman_collection.json; do
+                   tests/postman_collection/002_graphql_postman_collection.json \
+                   tests/postman_collection/003_graphql_postman_collection.json; do
             jq '
               def is_graphql:
                 (.request.body.mode? == "graphql")
                 or ((.request.url.raw? // "") | test("/graphql(\\?|$)"))
                 or (((.request.url.path? // []) | join("/")) | test("(^|/)graphql($|/)"));
+
               def is_upload_post:
                 (.request.body.mode? == "formdata")
                 and (
                   ((.request.url.raw? // "") | test("/upload-post(\\?|$)"))
                   or (((.request.url.path? // []) | join("/")) | test("(^|/)upload-post($|/)"))
                 );
+
               (.. | objects | select(has("request")) | select(is_graphql) | .request.url) |= {
                 raw: "{{BACKEND_URL}}/graphql",
                 protocol: "http",
                 host: ["backend"],
                 path: ["graphql"]
               }
-              | (.. | objects | select(has("request")) | select(is_upload_post)) as $req
-              | if $req.name | test("Upload media without token"; "i") then
-                  (.. | objects | select(. == $req) | .request.url) |= {
-                    raw: "{{BACKEND_URL}}/upload-post",
-                    protocol: "http",
-                    host: ["backend"],
-                    path: ["upload-post"]
-                  }
-                else
-                  (.. | objects | select(. == $req) | .request.url) |= {
-                    raw: "{{BACKEND_URL}}/upload-post",
-                    protocol: "http",
-                    host: ["backend"],
-                    path: ["upload-post"]
-                  }
-                  |
-                  (.. | objects | select(. == $req) | .request.body.formdata) |= (
-                    (map(if .key=="file" then (.key="media") else . end)
-                     | map(if .type=="media" then (.type="file") else . end))
-                    | (if any(.[]; .key=="eligibilityToken") then .
-                       else [{"key":"eligibilityToken","type":"text","value":"{{eligibilityToken}}"}] + .
-                       end)
-                  )
-                end
+              |
+              (.. | objects | select(has("request")) | select(is_upload_post)) |= (
+                . as $req
+                | if (($req.name // "") | test("Upload media without token"; "i")) then
+                    .request.url = {
+                      raw: "{{BACKEND_URL}}/upload-post",
+                      protocol: "http",
+                      host: ["backend"],
+                      path: ["upload-post"]
+                    }
+                  else
+                    .request.url = {
+                      raw: "{{BACKEND_URL}}/upload-post",
+                      protocol: "http",
+                      host: ["backend"],
+                      path: ["upload-post"]
+                    }
+                    | .request.body.formdata |= (
+                        ((. // []) 
+                          | map(if .key=="file" then (.key="media") else . end)
+                          | map(if .type=="media" then (.type="file") else . end))
+                        | if any(.[]?; .key=="eligibilityToken") then .
+                          else [{"key":"eligibilityToken","type":"text","value":"{{eligibilityToken}}"}] + .
+                          end
+                      )
+                  end
+              )
             ' "$file" > temp.json && mv temp.json "$file"
           done
 
