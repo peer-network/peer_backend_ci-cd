@@ -487,14 +487,21 @@ jobs:
             ' "$file"
             echo
           done
-          
+
       - name: Inject BACKEND_URL into Postman Environment
         run: |
           jq '.values += [{"key": "BACKEND_URL", "value": "http://backend", "type": "default", "enabled": true}]' \
             tests/postman_collection/graphql_postman_environment.json > temp_env.json
           mv temp_env.json tests/postman_collection/graphql_postman_environment.json
 
-      
+      - name: Show media files on host
+        run: ls -la tests/media_files || true
+
+      - name: Show media files inside newman container
+        run: |
+          docker compose run --rm \
+            --entrypoint sh newman -lc 'ls -la /etc/newman/media_files; echo; grep -n "sample_text.txt" /etc/newman/reports/merged.json || true'
+
       - name: Run Postman Tests in Newman Container
         id: newman
         continue-on-error: true
