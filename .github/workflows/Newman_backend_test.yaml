@@ -365,7 +365,13 @@ jobs:
  
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
-       
+
+      - name: Prepare media file aliases
+        run: |
+          cp "tests/media_files/image_01.jpg" "tests/media_files/sample_image.jpg"
+          cp "tests/media_files/file_example_MP4_480_1_5MG.mp4" "tests/media_files/sample_video.mp4"
+          cp "tests/media_files/MP3-5MB-Example.mp3" "tests/media_files/sample_audio.mp3"
+
       - name: Rewrite GraphQL and fix /upload-post payloads in Postman collections
         run: |
           for file in tests/postman_collection/001_graphql_postman_collection.json \
