@@ -353,7 +353,7 @@ jobs:
       - name: Check Backend Logs
         run: |
           echo "Fetching backend container logs..."
-          docker logs $(docker ps -q -f "name=peer_backend-backend-1")
+          docker logs $(docker ps -q -f "name=peer_backend_ci-cd-backend-1")
  
       - name: Check Backend Connection (using curl directly)
         run: |
@@ -366,24 +366,40 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
        
-      - name: Replace GraphQL URLs only in Postman collections
+      - name: Rewrite GraphQL and upload-post URLs in Postman collections
         run: |
           for file in tests/postman_collection/001_graphql_postman_collection.json \
                      tests/postman_collection/002_graphql_postman_collection.json \
                      tests/postman_collection/003_graphql_postman_collection.json; do
             jq '
-              # Detect GraphQL requests
+              # GraphQL matcher
               def is_graphql:
                 (.request.body.mode? == "graphql")
                 or ((.request.url.raw? // "") | test("/graphql(\\?|$)"))
                 or (((.request.url.path? // []) | join("/")) | test("(^|/)graphql($|/)"));
 
-              # Recurse into nested folders and rewrite only matching requests
+              # upload-post matcher (form-data upload)
+              def is_upload_post:
+                (.request.body.mode? == "formdata")
+                and (
+                  ((.request.url.raw? // "") | test("/upload-post(\\?|$)"))
+                  or (((.request.url.path? // []) | join("/")) | test("(^|/)upload-post($|/)"))
+                );
+
+              # 1) Force GraphQL to backend
               (.. | objects | select(has("request")) | select(is_graphql) | .request.url) |= {
                 raw: "{{BACKEND_URL}}/graphql",
                 protocol: "http",
                 host: ["backend"],
                 path: ["graphql"]
+              }
+
+              # 2) Force upload-post to backend (leave other media endpoints untouched)
+              | (.. | objects | select(has("request")) | select(is_upload_post) | .request.url) |= {
+                raw: "{{BACKEND_URL}}/upload-post",
+                protocol: "http",
+                host: ["backend"],
+                path: ["upload-post"]
               }
             ' "$file" > temp.json && mv temp.json "$file"
           done
