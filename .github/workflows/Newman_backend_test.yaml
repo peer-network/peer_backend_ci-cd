@@ -515,6 +515,37 @@ jobs:
           result=0
           docker compose -f ./docker-compose.yml run --rm newman || result=$?
           echo "$result" > newman_exit_code.txt
+
+      - name: Debug show headers/body for upload requests
+        if: always()
+        run: |
+          jq -r '
+            .run.executions[]
+            | select(.item.name|test("^Upload "))
+            | [
+                "▶ " + (.item.name // "unknown"),
+                "  URL: " + (.request.url.raw // (.request.url | tostring)),
+                "  Method: " + (.request.method // "n/a"),
+                "  Body.mode: " + (.request.body.mode // "n/a"),
+                (if .request.body.mode=="formdata" and (.request.body.formdata // null)
+                 then
+                   "  Form-data parts:\n" +
+                   ((.request.body.formdata
+                     | map("    - " + (.key // "") + " (" + (.type // "text") + ")"))
+                     | join("\n"))
+                 else "" end),
+                "  Headers:",
+                (
+                  ((.request.header
+                     // .request.headers.member
+                     // .request.headers.members
+                     // [])
+                   | map("    " + (.key // .name // "") + ": " + (.value // "")))
+                  | join("\n")
+                )
+              ] | join("\n")
+              + "\n"
+          ' newman/reports/merged.json || true
  
       - name: Set newman outcome output
         id: newman_output
