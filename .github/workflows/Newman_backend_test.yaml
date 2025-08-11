@@ -414,13 +414,88 @@ jobs:
                 end
             ' "$file" > temp.json && mv temp.json "$file"
           done
+
+      - name: Validate collections are valid JSON (after rewrite)
+        run: |
+          set -e
+          for f in tests/postman_collection/001_graphql_postman_collection.json \
+                   tests/postman_collection/002_graphql_postman_collection.json \
+                   tests/postman_collection/003_graphql_postman_collection.json; do
+            echo "Validating $f"
+            jq -e . "$f" >/dev/null || { echo "❌ Invalid JSON: $f"; exit 1; }
+          done
+          echo "✅ All collections are valid JSON"
+
+      - name: Show which file Newman will choke on (dry-run parse)
+        run: |
+          node - <<'JS'
+          const fs = require('fs');
+          const files = [
+            'tests/postman_collection/001_graphql_postman_collection.json',
+            'tests/postman_collection/002_graphql_postman_collection.json',
+            'tests/postman_collection/003_graphql_postman_collection.json'
+          ];
+          for (const f of files) {
+            const src = fs.readFileSync(f, 'utf8');
+            try {
+              JSON.parse(src);
+              console.log('OK  ', f, 'size=', src.length);
+            } catch (e) {
+              console.log('BAD ', f, 'size=', src.length, '-', e.message);
+              const pos = (e.position ?? 0);
+              const start = Math.max(0, pos - 120);
+              const end = Math.min(src.length, pos + 120);
+              console.log('Context around error:\n---\n' + src.slice(start, end) + '\n---');
+              process.exit(1);
+            }
+          }
+          JS
   
+      - name: Preview rewritten requests (GraphQL & /upload-post)
+        run: |
+          for file in tests/postman_collection/001_graphql_postman_collection.json \
+                     tests/postman_collection/002_graphql_postman_collection.json \
+                     tests/postman_collection/003_graphql_postman_collection.json; do
+            echo "==== $file ===="
+            jq -r '
+              def urlraw:
+                (.request.url.raw
+                 // ((.request.url.protocol // "http") + "://" + ((.request.url.host // [])|join(".")) +
+                     (if ((.request.url.path // [])|length)>0 then "/" + ((.request.url.path // [])|join("/")) else "" end)));
+
+              def is_graphql:
+                (.request.body.mode? == "graphql")
+                or ((.request.url.raw? // "") | test("/graphql(\\?|$)"))
+                or (((.request.url.path? // []) | join("/")) | test("(^|/)graphql($|/)"));
+
+              def is_upload_post:
+                (.request.body.mode? == "formdata")
+                and (
+                  ((.request.url.raw? // "") | test("/upload-post(\\?|$)"))
+                  or (((.request.url.path? // []) | join("/")) | test("(^|/)upload-post($|/)"))
+                );
+
+              .. | objects
+              | select(has("request"))
+              | if is_graphql then
+                  "[GRAPHQL] " + (.name // "no-name") + " -> " + (urlraw)
+                elif is_upload_post then
+                  "[UPLOAD]  " + (.name // "no-name") + " -> " + (urlraw)
+                  + " | keys=" + ((.request.body.formdata? // []) | map(.key) | join(","))
+                  + " | has_media=" + (((.request.body.formdata? // []) | any(.key=="media")) | tostring)
+                  + " | has_token=" + (((.request.body.formdata? // []) | any(.key=="eligibilityToken")) | tostring)
+                else empty end
+            ' "$file"
+            echo
+          done
+
       - name: Inject BACKEND_URL into Postman Environment
         run: |
           jq '.values += [{"key": "BACKEND_URL", "value": "http://backend", "type": "default", "enabled": true}]' \
             tests/postman_collection/graphql_postman_environment.json > temp_env.json
           mv temp_env.json tests/postman_collection/graphql_postman_environment.json
- 
+
+      
       - name: Run Postman Tests in Newman Container
         id: newman
         continue-on-error: true
