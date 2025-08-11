@@ -520,29 +520,39 @@ jobs:
         if: always()
         run: |
           jq -r '
+            def as_array:
+              if type=="array" then .
+              elif type=="object" then (.members // .member // [])
+              else [] end;
+
+            def urlraw:
+              if (.request.url|type)=="object" then
+                (.request.url.raw
+                 // ((.request.url.protocol // "http") + "://" + ((.request.url.host // [])|join(".")) +
+                     (if ((.request.url.path // [])|length)>0 then "/" + ((.request.url.path // [])|join("/")) else "" end)))
+              else
+                (.request.url // "n/a")
+              end;
+
+            def bodyobj: if (.request.body|type)=="object" then .request.body else {} end;
+            def bodymode: (bodyobj.mode // "n/a");
+            def formdata: (bodyobj.formdata // []) | (if type=="array" then . else [] end);
+            def headers:
+              (.request.header // .request.headers // [])
+              | as_array;
+
             .run.executions[]
             | select(.item.name|test("^Upload "))
             | [
                 "▶ " + (.item.name // "unknown"),
-                "  URL: " + (.request.url.raw // (.request.url | tostring)),
+                "  URL: " + (urlraw),
                 "  Method: " + (.request.method // "n/a"),
-                "  Body.mode: " + (.request.body.mode // "n/a"),
-                (if .request.body.mode=="formdata" and (.request.body.formdata // null)
-                 then
-                   "  Form-data parts:\n" +
-                   ((.request.body.formdata
-                     | map("    - " + (.key // "") + " (" + (.type // "text") + ")"))
-                     | join("\n"))
+                "  Body.mode: " + (bodymode),
+                (if bodymode=="formdata" and ((formdata)|length)>0
+                 then "  Form-data parts:\n" + (formdata | map("    - " + (.key // "") + " (" + (.type // "text") + ")") | join("\n"))
                  else "" end),
                 "  Headers:",
-                (
-                  ((.request.header
-                     // .request.headers.member
-                     // .request.headers.members
-                     // [])
-                   | map("    " + (.key // .name // "") + ": " + (.value // "")))
-                  | join("\n")
-                )
+                (headers | map("    " + (.key // .name // "") + ": " + (.value // "")) | join("\n"))
               ] | join("\n")
               + "\n"
           ' newman/reports/merged.json || true
