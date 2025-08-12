@@ -352,7 +352,7 @@ jobs:
       - name: Check Backend Logs
         run: |
           echo "Fetching backend container logs..."
-          docker logs $(docker ps -q -f "name=peer_backend-backend-1")
+          docker logs $(docker ps -q -f "name=peer_backend_ci-cd-backend-1")
  
       - name: Check Backend Connection (using curl directly)
         run: |
@@ -365,25 +365,186 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
        
-      - name: Replace Hardcoded URL in Postman Collection (using jq)
+      - name: Ensure host perms for media & reports
+        run: |
+          sudo mkdir -p tests/media_files newman/reports
+          # Make the runner own them (prevents host-side "Permission denied")
+          sudo chown -R "$(id -u)":"$(id -g)" tests/media_files newman/reports || true
+          # Readable for everyone; reports also writable for container user
+          sudo chmod -R u+rwX,go+rX tests/media_files
+          sudo chmod -R a+rwx newman/reports
+
+      - name: Rewrite GraphQL and fix /upload-post payloads in Postman collections
+        run: |
+          set -euo pipefail
+          for file in tests/postman_collection/001_graphql_postman_collection.json \
+                     tests/postman_collection/002_graphql_postman_collection.json \
+                     tests/postman_collection/003_graphql_postman_collection.json; do
+            tmp="$(mktemp)"
+            jq '
+              def is_graphql:
+                (.request.body.mode? == "graphql")
+                or ((.request.url.raw? // "") | test("/graphql(\\?|$)"))
+                or (((.request.url.path? // []) | join("/")) | test("(^|/)graphql($|/)"));
+
+              def is_upload_post:
+                (.request.body.mode? == "formdata")
+                and (
+                  ((.request.url.raw? // "") | test("/upload-post(\\?|$)"))
+                  or (((.request.url.path? // []) | join("/")) | test("(^|/)upload-post($|/)"))
+                );
+
+              (.. | objects | select(has("request")) | select(is_graphql) | .request.url) |= {
+                raw: "{{BACKEND_URL}}/graphql",
+                protocol: "http",
+                host: ["backend"],
+                path: ["graphql"]
+              }
+              |
+
+              (.. | objects | select(has("request")) | select(is_upload_post)) |= (
+                . as $item
+                | .request.url = {
+                    raw: "{{BACKEND_URL}}/upload-post",
+                    protocol: "http",
+                    host: ["backend"],
+                    path: ["upload-post"]
+                  }
+                | .request.header |= (
+                    ( . // [] )
+                    | if type=="array"
+                      then map(select((.key // .name // "" | ascii_downcase) != "content-type"))
+                      else [] end
+                  )
+                | .request.body.formdata |= (
+                    (. // [])
+                    | map(
+                        if      (.key // "") == "file"   then (.key = "media")
+                        elif    (.key // "") == "file[]" then (.key = "media[]")
+                        else . end
+                      )
+                    | if (($item.name // "") | test("Upload media without token"; "i"))
+                        then .
+                      else
+                        if any(.[]?; (.key // "")=="eligibilityToken") then .
+                        else [{"key":"eligibilityToken","type":"text","value":"{{eligibilityToken}}"}] + .
+                        end
+                      end
+                  )
+              )
+            ' "$file" > "$tmp" && mv "$tmp" "$file"
+          done
+
+      - name: Scan collections for explicit Content-Type on uploads (should be none)
+        run: |
+          for f in tests/postman_collection/*.json; do
+            echo "== $f =="
+            jq -r '
+              .. | objects
+              | select(has("request") and (.request.body.mode? == "formdata"))
+              | select(
+                  ((.request.url.raw? // "") | test("/upload-post(\\?|$)")) or
+                  (((.request.url.path? // []) | join("/")) | test("(^|/)upload-post($|/)"))
+                )
+              | {name: .name, hdrs: (.request.header // [])}
+              | select([.hdrs[]? | (.key // .name // "" | ascii_downcase)] | index("content-type"))
+              | "⚠️  \(.name) has explicit Content-Type header"
+            ' "$f"
+          done
+      - name: Validate collections are valid JSON (after rewrite)
+        run: |
+          set -e
+          for f in tests/postman_collection/001_graphql_postman_collection.json \
+                   tests/postman_collection/002_graphql_postman_collection.json \
+                   tests/postman_collection/003_graphql_postman_collection.json; do
+            echo "Validating $f"
+            jq -e . "$f" >/dev/null || { echo "❌ Invalid JSON: $f"; exit 1; }
+          done
+          echo "✅ All collections are valid JSON"
+
+      - name: Show which file Newman will choke on (dry-run parse)
+        run: |
+          node - <<'JS'
+          const fs = require('fs');
+          const files = [
+            'tests/postman_collection/001_graphql_postman_collection.json',
+            'tests/postman_collection/002_graphql_postman_collection.json',
+            'tests/postman_collection/003_graphql_postman_collection.json'
+          ];
+          for (const f of files) {
+            const src = fs.readFileSync(f, 'utf8');
+            try {
+              JSON.parse(src);
+              console.log('OK  ', f, 'size=', src.length);
+            } catch (e) {
+              console.log('BAD ', f, 'size=', src.length, '-', e.message);
+              const pos = (e.position ?? 0);
+              const start = Math.max(0, pos - 120);
+              const end = Math.min(src.length, pos + 120);
+              console.log('Context around error:\n---\n' + src.slice(start, end) + '\n---');
+              process.exit(1);
+            }
+          }
+          JS
+  
+      - name: Preview rewritten requests (GraphQL & /upload-post)
         run: |
           for file in tests/postman_collection/001_graphql_postman_collection.json \
-                tests/postman_collection/002_graphql_postman_collection.json \
-                tests/postman_collection/003_graphql_postman_collection.json; do
-            jq '(.item[] | select(.request.url.raw != null) | .request.url) |= {
-              raw: "{{BACKEND_URL}}/graphql",
-              protocol: "http",
-              host: ["backend"],
-              path: ["graphql"]
-            }' "$file" > temp.json && mv temp.json "$file"
+                     tests/postman_collection/002_graphql_postman_collection.json \
+                     tests/postman_collection/003_graphql_postman_collection.json; do
+            echo "==== $file ===="
+            jq -r '
+              def urlraw:
+                (.request.url.raw
+                 // ((.request.url.protocol // "http") + "://" + ((.request.url.host // [])|join(".")) +
+                     (if ((.request.url.path // [])|length)>0 then "/" + ((.request.url.path // [])|join("/")) else "" end)));
+
+              def is_graphql:
+                (.request.body.mode? == "graphql")
+                or ((.request.url.raw? // "") | test("/graphql(\\?|$)"))
+                or (((.request.url.path? // []) | join("/")) | test("(^|/)graphql($|/)"));
+
+              def is_upload_post:
+                (.request.body.mode? == "formdata")
+                and (
+                  ((.request.url.raw? // "") | test("/upload-post(\\?|$)"))
+                  or (((.request.url.path? // []) | join("/")) | test("(^|/)upload-post($|/)"))
+                );
+
+              .. | objects
+              | select(has("request"))
+              | if is_graphql then
+                  "[GRAPHQL] " + (.name // "no-name") + " -> " + (urlraw)
+                elif is_upload_post then
+                  "[UPLOAD]  " + (.name // "no-name") + " -> " + (urlraw)
+                  + " | keys=" + ((.request.body.formdata? // []) | map(.key) | join(","))
+                  + " | has_file=" + (((.request.body.formdata? // []) | any(.key=="file")) | tostring)
+                  + " | has_media=" + (((.request.body.formdata? // []) | any(.key=="media")) | tostring)
+                  + " | has_token=" + (((.request.body.formdata? // []) | any(.key=="eligibilityToken")) | tostring)
+                else empty end
+            ' "$file"
+            echo
           done
- 
+
       - name: Inject BACKEND_URL into Postman Environment
         run: |
           jq '.values += [{"key": "BACKEND_URL", "value": "http://backend", "type": "default", "enabled": true}]' \
             tests/postman_collection/graphql_postman_environment.json > temp_env.json
           mv temp_env.json tests/postman_collection/graphql_postman_environment.json
- 
+
+      - name: Show media files on host
+        run: ls -la tests/media_files || true
+
+      - name: Show media files inside newman container
+        run: |
+          docker compose run --rm \
+            --entrypoint sh newman -lc 'ls -la /etc/newman/media_files; echo; grep -n "sample_text.txt" /etc/newman/reports/merged.json || true'
+
+      - name: Debug media_files before running Newman
+        run: |
+          docker compose run --rm \
+            --entrypoint sh newman -lc 'ls -l /etc/newman/media_files'
+
       - name: Run Postman Tests in Newman Container
         id: newman
         continue-on-error: true
@@ -391,7 +552,47 @@ jobs:
           result=0
           docker compose -f ./docker-compose.yml run --rm newman || result=$?
           echo "$result" > newman_exit_code.txt
- 
+
+      - name: Debug show headers for upload requests
+        if: always()
+        run: |
+          jq -r '
+            (.run.executions // []) | (if type=="array" then . else [] end) | .[]
+            | select((.item.name // "") | test("^Upload "))
+            | [
+                "▶ " + (.item.name // "unknown"),
+                "  URL: " + ((.request.url.raw // (.request.url | tostring)) // "n/a"),
+                "  Headers:",
+                (
+                  (
+                    (.request.header // .request.headers // [])
+                    | if type=="array" then .
+                      elif type=="object" then (.members // .member // [])
+                      else [] end
+                    | map("    " + (.key // .name // "") + ": " + (.value // ""))
+                  ) | join("\n")
+                )
+              ] | join("\n") + "\n"
+          ' newman/reports/merged.json || true
+
+      - name: What is .run.executions?
+        if: always()
+        run: jq -r '"executions type = " + ((.run.executions? | type) // "missing")' newman/reports/merged.json || true
+
+      - name: Quick scan for JSON Content-Type on uploads
+        if: always()
+        run: |
+          jq -r '
+            (.run.executions // []) | (if type=="array" then . else [] end) | .[]
+            | select((.item.name // "") | test("^Upload "))
+            | (.request.header // .request.headers // [])
+            | (if type=="array" then .
+               elif type=="object" then (.members // .member // [])
+               else [] end)
+            | map("\(.key // .name): \(.value // "")")
+            | .[]
+          ' newman/reports/merged.json | grep -i '^Content-Type' || true
+
       - name: Set newman outcome output
         id: newman_output
         run: |
