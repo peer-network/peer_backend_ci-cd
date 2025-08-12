@@ -366,6 +366,15 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
+      - name: Ensure host perms for media & reports
+        run: |
+          sudo mkdir -p tests/media_files newman/reports
+          # Make the runner own them (prevents host-side "Permission denied")
+          sudo chown -R "$(id -u)":"$(id -g)" tests/media_files newman/reports || true
+          # Readable for everyone; reports also writable for container user
+          sudo chmod -R u+rwX,go+rX tests/media_files
+          sudo chmod -R a+rwx newman/reports
+
       - name: Prepare media file aliases
         run: |
           cp "tests/media_files/image_01.jpg" "tests/media_files/sample_image.jpg"
@@ -540,8 +549,8 @@ jobs:
 
       - name: Debug media_files before running Newman
         run: |
-          echo "Debug: Listing media files inside /etc/newman/media_files..."
-          docker compose run --rm newman ls -l /etc/newman/media_files || echo "media_files not found"
+          docker compose run --rm \
+            --entrypoint sh newman -lc 'ls -l /etc/newman/media_files'
 
       - name: Run Postman Tests in Newman Container
         id: newman
