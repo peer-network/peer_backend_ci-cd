@@ -354,7 +354,7 @@ jobs:
       - name: Check Backend Logs
         run: |
           echo "Fetching backend container logs..."
-          docker logs $(docker ps -q -f "name=peer_backend-backend-1")
+          docker logs $(docker ps -q -f "name=peer_backend_ci-cd-backend-1")
  
       - name: Check Backend Connection (using curl directly)
         run: |
@@ -367,17 +367,36 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
        
-      - name: Replace Hardcoded URL in Postman Collection (using jq)
+      - name: Rewrite GraphQL + uploads to backend container
         run: |
+          set -euo pipefail
           for file in tests/postman_collection/001_graphql_postman_collection.json \
-                tests/postman_collection/002_graphql_postman_collection.json \
-                tests/postman_collection/003_graphql_postman_collection.json; do
-            jq '(.item[] | select(.request.url.raw != null) | .request.url) |= {
-              raw: "{{BACKEND_URL}}/graphql",
-              protocol: "http",
-              host: ["backend"],
-              path: ["graphql"]
-            }' "$file" > temp.json && mv temp.json "$file"
+                     tests/postman_collection/002_graphql_postman_collection.json \
+                     tests/postman_collection/003_graphql_postman_collection.json; do
+            tmp="$(mktemp)"
+            jq '
+              def is_graphql:
+                (.request.body.mode? == "graphql")
+                or ((.request.url.raw? // "") | test("/graphql(\\?|$)"))
+                or (((.request.url.path? // []) | join("/")) | test("(^|/)graphql($|/)"));
+
+              def is_formdata_upload:
+                (.request.body.mode? == "formdata");
+
+              (.. | objects | select(has("request")) | select(is_graphql) | .request.url) |= {
+                raw: "{{BACKEND_URL}}/graphql",
+                protocol: "http",
+                host: ["backend"],
+                path: ["graphql"]
+              }
+              |
+              (.. | objects | select(has("request")) | select(is_formdata_upload) | .request.url) |= {
+                raw: "{{BACKEND_URL}}/upload-post",
+                protocol: "http",
+                host: ["backend"],
+                path: ["upload-post"]
+              }
+            ' "$file" > "$tmp" && mv "$tmp" "$file"
           done
  
       - name: Inject BACKEND_URL into Postman Environment
