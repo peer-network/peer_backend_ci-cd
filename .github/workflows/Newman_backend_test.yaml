@@ -375,8 +375,8 @@ jobs:
       - name: Rewrite GraphQL and fix /upload-post payloads in Postman collections
         run: |
           for file in tests/postman_collection/001_graphql_postman_collection.json \
-                   tests/postman_collection/002_graphql_postman_collection.json \
-                   tests/postman_collection/003_graphql_postman_collection.json; do
+                     tests/postman_collection/002_graphql_postman_collection.json \
+                     tests/postman_collection/003_graphql_postman_collection.json; do
             jq '
               def is_graphql:
                 (.request.body.mode? == "graphql")
@@ -405,12 +405,19 @@ jobs:
                   path: ["upload-post"]
                 }
                 |
+                .request.header |= (
+                  ( . // [] )
+                  | if type=="array"
+                    then map(select((.key // .name // "" | ascii_downcase) != "content-type"))
+                    else [] end
+                )
+                |
                 if ((.name // "") | test("Upload media without token"; "i")) then
-                  .  # leave formdata as-is
+                  .
                 else
                   .request.body.formdata |= (
                     (. // [])
-                    | if any(.[]?; .key=="eligibilityToken") then .
+                    | if any(.[]?; (.key // "")=="eligibilityToken") then .
                       else [{"key":"eligibilityToken","type":"text","value":"{{eligibilityToken}}"}] + .
                       end
                   )
@@ -418,7 +425,22 @@ jobs:
               )
             ' "$file" > temp.json && mv temp.json "$file"
           done
-
+      - name: Scan collections for explicit Content-Type on uploads (should be none)
+        run: |
+          for f in tests/postman_collection/*.json; do
+            echo "== $f =="
+            jq -r '
+              .. | objects
+              | select(has("request") and (.request.body.mode? == "formdata"))
+              | select(
+                  ((.request.url.raw? // "") | test("/upload-post(\\?|$)")) or
+                  (((.request.url.path? // []) | join("/")) | test("(^|/)upload-post($|/)"))
+                )
+              | {name: .name, hdrs: (.request.header // [])}
+              | select([.hdrs[]? | (.key // .name // "" | ascii_downcase)] | index("content-type"))
+              | "⚠️  \(.name) has explicit Content-Type header"
+            ' "$f"
+          done
       - name: Validate collections are valid JSON (after rewrite)
         run: |
           set -e
@@ -555,7 +577,7 @@ jobs:
             | map("\(.key // .name): \(.value // "")")
             | .[]
           ' newman/reports/merged.json | grep -i '^Content-Type' || true
-          
+
       - name: Set newman outcome output
         id: newman_output
         run: |
