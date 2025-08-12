@@ -412,19 +412,24 @@ jobs:
                     else [] end
                 )
                 |
-                if ((.name // "") | test("Upload media without token"; "i")) then
-                  .
-                else
-                  .request.body.formdata |= (
-                    (. // [])
-                    | if any(.[]?; (.key // "")=="eligibilityToken") then .
+                .request.body.formdata |= (
+                  (. // [])
+                  | map(
+                      if      (.key // "") == "file"   then (.key = "media")
+                      elif    (.key // "") == "file[]" then (.key = "media[]")
+                      else . end
+                    )
+                  | if ((.. | select(has("name")) | .name? // "") | test("Upload media without token"; "i"))
+                      then .
+                    else
+                      if any(.[]?; (.key // "")=="eligibilityToken") then .
                       else [{"key":"eligibilityToken","type":"text","value":"{{eligibilityToken}}"}] + .
                       end
-                  )
-                end
+                    end
+                )
               )
             ' "$file" > temp.json && mv temp.json "$file"
-          done
+            
       - name: Scan collections for explicit Content-Type on uploads (should be none)
         run: |
           for f in tests/postman_collection/*.json; do
