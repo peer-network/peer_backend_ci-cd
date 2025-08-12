@@ -377,7 +377,7 @@ jobs:
               def is_graphql:
                 (.request.body.mode? == "graphql")
                 or ((.request.url.raw? // "") | test("/graphql(\\?|$)"))
-                r (((.request.url.path? // []) | join("/")) | test("(^|/)graphql($|/)"));
+                or (((.request.url.path? // []) | join("/")) | test("(^|/)graphql($|/)"));
 
               def is_formdata_upload:
                 (.request.body.mode? == "formdata");
