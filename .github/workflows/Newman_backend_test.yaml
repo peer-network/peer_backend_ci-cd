@@ -516,47 +516,46 @@ jobs:
           docker compose -f ./docker-compose.yml run --rm newman || result=$?
           echo "$result" > newman_exit_code.txt
 
-      - name: Debug show headers/body for upload requests
+      - name: Debug show headers for upload requests
         if: always()
         run: |
           jq -r '
-            def as_array:
-              if type=="array" then .
-              elif type=="object" then (.members // .member // [])
-              else [] end;
-
-            def urlraw:
-              if (.request.url|type)=="object" then
-                (.request.url.raw
-                 // ((.request.url.protocol // "http") + "://" + ((.request.url.host // [])|join(".")) +
-                     (if ((.request.url.path // [])|length)>0 then "/" + ((.request.url.path // [])|join("/")) else "" end)))
-              else
-                (.request.url // "n/a")
-              end;
-
-            def bodyobj: if (.request.body|type)=="object" then .request.body else {} end;
-            def bodymode: (bodyobj.mode // "n/a");
-            def formdata: (bodyobj.formdata // []) | (if type=="array" then . else [] end);
-            def headers:
-              (.request.header // .request.headers // [])
-              | as_array;
-
-            .run.executions[]
-            | select(.item.name|test("^Upload "))
+            (.run.executions // []) | (if type=="array" then . else [] end) | .[]
+            | select((.item.name // "") | test("^Upload "))
             | [
                 "▶ " + (.item.name // "unknown"),
-                "  URL: " + (urlraw),
-                "  Method: " + (.request.method // "n/a"),
-                "  Body.mode: " + (bodymode),
-                (if bodymode=="formdata" and ((formdata)|length)>0
-                 then "  Form-data parts:\n" + (formdata | map("    - " + (.key // "") + " (" + (.type // "text") + ")") | join("\n"))
-                 else "" end),
+                "  URL: " + ((.request.url.raw // (.request.url | tostring)) // "n/a"),
                 "  Headers:",
-                (headers | map("    " + (.key // .name // "") + ": " + (.value // "")) | join("\n"))
-              ] | join("\n")
-              + "\n"
+                (
+                  (
+                    (.request.header // .request.headers // [])
+                    | if type=="array" then .
+                      elif type=="object" then (.members // .member // [])
+                      else [] end
+                    | map("    " + (.key // .name // "") + ": " + (.value // ""))
+                  ) | join("\n")
+                )
+              ] | join("\n") + "\n"
           ' newman/reports/merged.json || true
- 
+
+      - name: What is .run.executions?
+        if: always()
+        run: jq -r '"executions type = " + ((.run.executions? | type) // "missing")' newman/reports/merged.json || true
+
+      - name: Quick scan for JSON Content-Type on uploads
+        if: always()
+        run: |
+          jq -r '
+            (.run.executions // []) | (if type=="array" then . else [] end) | .[]
+            | select((.item.name // "") | test("^Upload "))
+            | (.request.header // .request.headers // [])
+            | (if type=="array" then .
+               elif type=="object" then (.members // .member // [])
+               else [] end)
+            | map("\(.key // .name): \(.value // "")")
+            | .[]
+          ' newman/reports/merged.json | grep -i '^Content-Type' || true
+          
       - name: Set newman outcome output
         id: newman_output
         run: |
