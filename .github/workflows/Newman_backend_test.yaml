@@ -429,7 +429,8 @@ jobs:
                 )
               )
             ' "$file" > temp.json && mv temp.json "$file"
-            
+          done
+
       - name: Scan collections for explicit Content-Type on uploads (should be none)
         run: |
           for f in tests/postman_collection/*.json; do
