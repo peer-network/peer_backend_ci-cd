@@ -538,6 +538,11 @@ jobs:
           docker compose run --rm \
             --entrypoint sh newman -lc 'ls -la /etc/newman/media_files; echo; grep -n "sample_text.txt" /etc/newman/reports/merged.json || true'
 
+      - name: Debug media_files before running Newman
+        run: |
+          echo "Debug: Listing media files inside /etc/newman/media_files..."
+          docker compose run --rm newman ls -l /etc/newman/media_files || echo "media_files not found"
+
       - name: Run Postman Tests in Newman Container
         id: newman
         continue-on-error: true
