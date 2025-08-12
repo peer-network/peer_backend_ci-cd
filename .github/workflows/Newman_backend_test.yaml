@@ -353,7 +353,7 @@ jobs:
       - name: Check Backend Logs
         run: |
           echo "Fetching backend container logs..."
-          docker logs $(docker ps -q -f "name=peer_backend-backend-1")
+          docker logs $(docker ps -q -f "name=peer_backend_ci-cd-backend-1")
  
       - name: Check Backend Connection (using curl directly)
         run: |
@@ -366,17 +366,66 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
        
-      - name: Replace Hardcoded URL in Postman Collection (using jq)
+      - name: Rewrite GraphQL and /upload-post requests in Postman collections
         run: |
+          set -euo pipefail
           for file in tests/postman_collection/001_graphql_postman_collection.json \
-                tests/postman_collection/002_graphql_postman_collection.json \
-                tests/postman_collection/003_graphql_postman_collection.json; do
-            jq '(.item[] | select(.request.url.raw != null) | .request.url) |= {
-              raw: "{{BACKEND_URL}}/graphql",
-              protocol: "http",
-              host: ["backend"],
-              path: ["graphql"]
-            }' "$file" > temp.json && mv temp.json "$file"
+                     tests/postman_collection/002_graphql_postman_collection.json \
+                     tests/postman_collection/003_graphql_postman_collection.json; do
+            tmp="$(mktemp)"
+            jq '
+              def is_graphql:
+                (.request.body.mode? == "graphql")
+                or ((.request.url.raw? // "") | test("/graphql(\\?|$)"))
+                or (((.request.url.path? // []) | join("/")) | test("(^|/)graphql($|/)"));
+
+              def is_upload_post:
+                (.request.body.mode? == "formdata")
+                and (
+                  ((.request.url.raw? // "") | test("/upload-post(\\?|$)"))
+                  or (((.request.url.path? // []) | join("/")) | test("(^|/)upload-post($|/)"))
+                );
+
+              (.. | objects | select(has("request")) | select(is_graphql) | .request.url) |= {
+                raw: "{{BACKEND_URL}}/graphql",
+                protocol: "http",
+                host: ["backend"],
+                path: ["graphql"]
+              }
+              |
+              (.. | objects | select(has("request")) | select(is_upload_post)) |= (
+                . as $item
+                | .request.url = {
+                    raw: "{{BACKEND_URL}}/upload-post",
+                    protocol: "http",
+                    host: ["backend"],
+                    path: ["upload-post"]
+                  }
+                # remove any explicit Content-Type (let Newman set multipart)
+                | .request.header |= (
+                    ( . // [] )
+                    | if type=="array"
+                      then map(select((.key // .name // "" | ascii_downcase) != "content-type"))
+                      else [] end
+                  )
+                # normalize form-data keys and auto-inject eligibilityToken (except the explicit no-token test)
+                | .request.body.formdata |= (
+                    (. // [])
+                    | map(
+                        if      (.key // "") == "file"   then (.key = "media")
+                        elif    (.key // "") == "file[]" then (.key = "media[]")
+                        else . end
+                      )
+                    | if (($item.name // "") | test("Upload media without token"; "i"))
+                        then .
+                      else
+                        if any(.[]?; (.key // "")=="eligibilityToken") then .
+                        else [{"key":"eligibilityToken","type":"text","value":"{{eligibilityToken}}"}] + .
+                        end
+                      end
+                  )
+              )
+            ' "$file" > "$tmp" && mv "$tmp" "$file"
           done
  
       - name: Inject BACKEND_URL into Postman Environment
