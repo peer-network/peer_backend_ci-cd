@@ -366,7 +366,7 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
        
-      - name: Rewrite GraphQL and /upload-post requests in Postman collections
+      - name: Rewrite GraphQL + ALL formdata (upload) requests
         run: |
           set -euo pipefail
           for file in tests/postman_collection/001_graphql_postman_collection.json \
@@ -377,14 +377,10 @@ jobs:
               def is_graphql:
                 (.request.body.mode? == "graphql")
                 or ((.request.url.raw? // "") | test("/graphql(\\?|$)"))
-                or (((.request.url.path? // []) | join("/")) | test("(^|/)graphql($|/)"));
+                r (((.request.url.path? // []) | join("/")) | test("(^|/)graphql($|/)"));
 
-              def is_upload_post:
-                (.request.body.mode? == "formdata")
-                and (
-                  ((.request.url.raw? // "") | test("/upload-post(\\?|$)"))
-                  or (((.request.url.path? // []) | join("/")) | test("(^|/)upload-post($|/)"))
-                );
+              def is_formdata_upload:
+                (.request.body.mode? == "formdata");
 
               (.. | objects | select(has("request")) | select(is_graphql) | .request.url) |= {
                 raw: "{{BACKEND_URL}}/graphql",
@@ -393,7 +389,8 @@ jobs:
                 path: ["graphql"]
               }
               |
-              (.. | objects | select(has("request")) | select(is_upload_post)) |= (
+
+              (.. | objects | select(has("request")) | select(is_formdata_upload)) |= (
                 . as $item
                 | .request.url = {
                     raw: "{{BACKEND_URL}}/upload-post",
@@ -401,14 +398,14 @@ jobs:
                     host: ["backend"],
                     path: ["upload-post"]
                   }
-                # remove any explicit Content-Type (let Newman set multipart)
+         
                 | .request.header |= (
                     ( . // [] )
                     | if type=="array"
                       then map(select((.key // .name // "" | ascii_downcase) != "content-type"))
                       else [] end
                   )
-                # normalize form-data keys and auto-inject eligibilityToken (except the explicit no-token test)
+         
                 | .request.body.formdata |= (
                     (. // [])
                     | map(
